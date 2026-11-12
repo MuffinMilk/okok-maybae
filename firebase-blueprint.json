@@ -1,0 +1,100 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User account with linked Spotify credentials for cross-device authentication",
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Unique username for login",
+          "minLength": 3,
+          "maxLength": 50
+        },
+        "passwordHash": {
+          "type": "string",
+          "description": "Salted hash of user password",
+          "maxLength": 256
+        },
+        "spotifyToken": {
+          "type": "string",
+          "description": "Linked Spotify access token for seamless streaming",
+          "maxLength": 1024
+        },
+        "spotifyDisplayName": {
+          "type": "string",
+          "description": "Spotify user display name",
+          "maxLength": 100
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of account creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["username", "passwordHash"]
+    },
+    "Pairing": {
+      "title": "Pairing",
+      "description": "Cross-device 6-character pairing session bridging iPhone 5 and Spotify Web/OAuth portal",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Uppercase 6-character pairing code",
+          "minLength": 6,
+          "maxLength": 6,
+          "pattern": "^[A-HJ-NP-Z2-9]{6}$"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current pairing lifecycle state",
+          "enum": ["pending", "paired"]
+        },
+        "accessToken": {
+          "type": "string",
+          "description": "Authorized Spotify access token returned upon pairing",
+          "maxLength": 1024
+        },
+        "refreshToken": {
+          "type": "string",
+          "description": "Authorized Spotify refresh token returned upon pairing",
+          "maxLength": 1024
+        },
+        "username": {
+          "type": "string",
+          "description": "Optional associated Xpotify username",
+          "maxLength": 64
+        },
+        "expiresAt": {
+          "type": "integer",
+          "description": "Epoch milliseconds when pairing session expires"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of pairing creation",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last pairing update",
+          "maxLength": 64
+        }
+      },
+      "required": ["code", "status", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile and linked Spotify tokens for cross-device synchronization"
+    },
+    "/pairings/{code}": {
+      "schema": "Pairing",
+      "description": "Cross-device 6-character pairing code state synchronized via serverless API and Express"
+    }
+  }
+}

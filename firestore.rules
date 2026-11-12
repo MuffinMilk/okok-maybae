@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidPairingId(code) {
+      return code is string && code.size() == 6 && code.matches('^[A-HJ-NP-Z2-9]{6}$');
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['username']) &&
+        data.keys().hasOnly(['username', 'passwordHash', 'spotifyToken', 'spotifyDisplayName', 'createdAt', 'updatedAt']) &&
+        data.username is string && data.username.size() >= 2 && data.username.size() <= 50 &&
+        (!('passwordHash' in data) || (data.passwordHash is string && data.passwordHash.size() <= 256)) &&
+        (!('spotifyToken' in data) || data.spotifyToken == null || (data.spotifyToken is string && data.spotifyToken.size() <= 1024)) &&
+        (!('spotifyDisplayName' in data) || data.spotifyDisplayName == null || (data.spotifyDisplayName is string && data.spotifyDisplayName.size() <= 100)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    function isValidPairing(data, code) {
+      return data.keys().hasAll(['code', 'status', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['code', 'status', 'accessToken', 'refreshToken', 'username', 'expiresAt', 'createdAt', 'updatedAt']) &&
+        data.code is string && data.code.size() == 6 && data.code == code &&
+        data.status in ['pending', 'paired'] &&
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        data.updatedAt is string && data.updatedAt.size() <= 64 &&
+        (!('accessToken' in data) || (data.accessToken is string && data.accessToken.size() <= 1024)) &&
+        (!('refreshToken' in data) || (data.refreshToken is string && data.refreshToken.size() <= 1024)) &&
+        (!('username' in data) || (data.username is string && data.username.size() <= 64)) &&
+        (!('expiresAt' in data) || (data.expiresAt is int));
+    }
+
+    // Users collection for cross-device authentication and Spotify token sync
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['spotifyToken', 'spotifyDisplayName', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // Cross-device 6-character pairing codes (no list queries permitted; terminal state locked once paired)
+    match /pairings/{code} {
+      allow get: if isValidPairingId(code);
+      allow list: if false;
+      allow create: if isValidPairingId(code) && isValidPairing(incoming(), code) &&
+        incoming().status == 'pending';
+      allow update: if isValidPairingId(code) && isValidPairing(incoming(), code) &&
+        existing().status == 'pending' &&
+        incoming().code == existing().code &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'accessToken', 'refreshToken', 'username', 'expiresAt', 'updatedAt']);
+      allow delete: if false;
+    }
+  }
+}

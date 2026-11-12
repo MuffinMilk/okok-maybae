@@ -1,0 +1,6 @@
+{
+  "name": "Xpotify - iOS 7 Spotify Web Player",
+  "description": "A native-feeling iOS 7.1.2 Safari optimized Spotify web player inspired by Xpotify for iPhone 5.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
