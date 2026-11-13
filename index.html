@@ -11,6 +11,7 @@
   <!-- Legacy iOS 7 Mobile Safari Meta Tags -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Xpotify">
   <meta name="format-detection" content="telephone=no">
@@ -1694,7 +1695,7 @@
         <div class="ios7-scroll-body with-player">
           <!-- Playlist Header Cover Hero -->
           <div style="padding: 16px 15px; display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-align: center; -webkit-align-items: center; align-items: center; background: #121212; border-bottom: 1px solid #222222;">
-            <img id="detail-cover-img" src="assets/covers/cover_indie_tape.jpg" class="rich-thumbnail" style="width: 60px; height: 60px; margin-right: 14px;" alt="Cover">
+            <img id="detail-cover-img" src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%231c1c1e'/%3E%3Ccircle cx='60' cy='60' r='34' fill='%23121214' stroke='%231db954' stroke-width='3'/%3E%3Ccircle cx='60' cy='60' r='8' fill='%231db954'/%3E%3C/svg%3E" class="rich-thumbnail" style="width: 60px; height: 60px; margin-right: 14px;" alt="Cover">
             <div>
               <div id="detail-name" style="font-size: 16px; font-weight: 400; color: #ffffff;">Playlist Title</div>
               <div id="detail-owner" style="font-size: 12px; color: #8e8e93; margin-top: 2px;">By Spotify</div>
@@ -1754,7 +1755,7 @@
         <div class="mini-progress-bar">
           <div class="mini-progress-fill" id="mini-progress-fill"></div>
         </div>
-        <img src="assets/covers/cover_doom_vinyl.jpg" id="mini-art-img" class="mini-art" alt="Track Art">
+        <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%231c1c1e'/%3E%3Ccircle cx='60' cy='60' r='34' fill='%23121214' stroke='%231db954' stroke-width='3'/%3E%3Ccircle cx='60' cy='60' r='8' fill='%231db954'/%3E%3C/svg%3E" id="mini-art-img" class="mini-art" alt="Track Art">
         <div class="mini-info">
           <div class="mini-title" id="mini-title-text">Not Playing</div>
           <div class="mini-artist" id="mini-artist-text">Tap a track to begin</div>
@@ -1795,7 +1796,7 @@
         </div>
 
         <div class="artwork-container">
-          <img src="assets/covers/cover_doom_vinyl.jpg" id="full-art-img" class="full-artwork" alt="Album Cover">
+          <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%231c1c1e'/%3E%3Ccircle cx='60' cy='60' r='34' fill='%23121214' stroke='%231db954' stroke-width='3'/%3E%3Ccircle cx='60' cy='60' r='8' fill='%231db954'/%3E%3C/svg%3E" id="full-art-img" class="full-artwork" alt="Album Cover">
         </div>
 
         <div class="full-track-meta">
@@ -2101,6 +2102,36 @@
       var audioCtx = null;
       var livePlaylists = [];
 
+      var backendApiUnavailable = false;
+      var localAudioUnavailable = false;
+      var spotifyPlayerPollDisabled = false;
+
+      function isStaticPagesHost() {
+        var h = (window.location.hostname || "").toLowerCase();
+        return h.indexOf("github.io") !== -1 || h.indexOf("pages.dev") !== -1 || window.location.protocol === "file:";
+      }
+
+      function hasCustomBackendOverride() {
+        var input = document.getElementById("backend-url-input");
+        if (input && input.value && input.value.trim().indexOf("http") === 0 && input.value.indexOf("ngrok-free.dev") === -1) {
+          return true;
+        }
+        var saved = safeStorage.get("backend_url");
+        return Boolean(saved && saved.trim().indexOf("http") === 0 && saved.indexOf("ngrok-free.dev") === -1);
+      }
+
+      function hasBackendApi() {
+        if (hasCustomBackendOverride()) return true;
+        if (backendApiUnavailable || isStaticPagesHost()) return false;
+        return true;
+      }
+
+      function markBackendApiStatus(status) {
+        if (!hasCustomBackendOverride() && (status === 404 || status === 405 || status === 501)) {
+          backendApiUnavailable = true;
+        }
+      }
+
       // Subpath-aware origin & base helpers (works on root Vercel & subpath GitHub Pages)
       function getCleanOrigin() {
         return window.location.origin || (window.location.protocol + "//" + window.location.host);
@@ -2128,7 +2159,7 @@
         return getAppBaseUrl() + clean;
       }
 
-      // Local audio tracks hosted on server/static host for zero-latency iOS 7 playback
+      // Local audio tracks hosted on server/Vercel for fallback playback
       var localAudioUrls = [
         "audio/track1.mp3",
         "audio/track2.mp3",
@@ -2138,11 +2169,18 @@
         "audio/track6.mp3"
       ];
 
+      var INLINE_SVG_COVERS = {
+        doom: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23161618'/%3E%3Ccircle cx='60' cy='60' r='42' fill='%23232326' stroke='%231db954' stroke-width='3'/%3E%3Ccircle cx='60' cy='60' r='12' fill='%231db954'/%3E%3C/svg%3E",
+        indie: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%2318222a'/%3E%3Crect x='18' y='30' width='84' height='60' rx='8' fill='%2324333f' stroke='%234ecdc4' stroke-width='3'/%3E%3Ccircle cx='42' cy='60' r='9' fill='%234ecdc4'/%3E%3Ccircle cx='78' cy='60' r='9' fill='%234ecdc4'/%3E%3C/svg%3E",
+        rock: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%231f1215'/%3E%3Cpolygon points='60,20 100,96 20,96' fill='none' stroke='%23ff3b30' stroke-width='4'/%3E%3Ccircle cx='60' cy='68' r='10' fill='%23ff3b30'/%3E%3C/svg%3E",
+        synth: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23171226'/%3E%3Cpath d='M16 74 Q38 30 60 66 T104 46' fill='none' stroke='%23bf5af2' stroke-width='5' stroke-linecap='round'/%3E%3Ccircle cx='60' cy='60' r='44' fill='none' stroke='%231db954' stroke-width='2' stroke-opacity='0.6'/%3E%3C/svg%3E"
+      };
+
       var LOCAL_COVERS = {
-        doom: resolveAppAssetUrl("assets/covers/cover_doom_vinyl.jpg"),
-        indie: resolveAppAssetUrl("assets/covers/cover_indie_tape.jpg"),
-        rock: resolveAppAssetUrl("assets/covers/cover_industrial_metal.jpg"),
-        synth: resolveAppAssetUrl("assets/covers/cover_synth_radio.jpg")
+        doom: isStaticPagesHost() ? INLINE_SVG_COVERS.doom : resolveAppAssetUrl("assets/covers/cover_doom_vinyl.jpg"),
+        indie: isStaticPagesHost() ? INLINE_SVG_COVERS.indie : resolveAppAssetUrl("assets/covers/cover_indie_tape.jpg"),
+        rock: isStaticPagesHost() ? INLINE_SVG_COVERS.rock : resolveAppAssetUrl("assets/covers/cover_industrial_metal.jpg"),
+        synth: isStaticPagesHost() ? INLINE_SVG_COVERS.synth : resolveAppAssetUrl("assets/covers/cover_synth_radio.jpg")
       };
 
       function getSafeArtUrl(url, fallback) {
@@ -2238,7 +2276,7 @@
           var hit = realAudioCache[cacheKey];
           track.resolved_audio_url = hit.audioUrl;
           track.preview_url = hit.audioUrl;
-          if (hit.art && (!track.art || track.art.indexOf("/assets/") !== -1 || track.art.indexOf("assets/covers/") !== -1)) {
+          if (hit.art && (!track.art || track.art.indexOf("/assets/") !== -1 || track.art.indexOf("assets/covers/") !== -1 || track.art.indexOf("data:image/") === 0)) {
             track.art = hit.art;
           }
           if (onDone) onDone(hit);
@@ -2246,11 +2284,16 @@
         }
 
         function queryBackendFallback() {
+          if (!hasBackendApi()) {
+            if (onDone) onDone(null);
+            return;
+          }
           var bXhr = new XMLHttpRequest();
           bXhr.open("GET", getBackendBaseUrl() + "/api/audio/resolve?title=" + encodeURIComponent(track.title) + "&artist=" + encodeURIComponent(track.artist || ""), true);
           bXhr.timeout = 3000;
           bXhr.onreadystatechange = function () {
             if (bXhr.readyState === 4) {
+              markBackendApiStatus(bXhr.status);
               if (bXhr.status >= 200 && bXhr.status < 300) {
                 try {
                   var bData = JSON.parse(bXhr.responseText || "{}");
@@ -2259,7 +2302,7 @@
                     realAudioCache[cacheKey] = resObj;
                     track.resolved_audio_url = resObj.audioUrl;
                     track.preview_url = resObj.audioUrl;
-                    if (resObj.art && (!track.art || track.art.indexOf("/assets/") !== -1 || track.art.indexOf("assets/covers/") !== -1)) {
+                    if (resObj.art && (!track.art || track.art.indexOf("/assets/") !== -1 || track.art.indexOf("assets/covers/") !== -1 || track.art.indexOf("data:image/") === 0)) {
                       track.art = resObj.art;
                     }
                     if (onDone) onDone(resObj);
@@ -2311,7 +2354,7 @@
                   realAudioCache[cacheKey] = found;
                   track.resolved_audio_url = found.audioUrl;
                   track.preview_url = found.audioUrl;
-                  if (found.art && (!track.art || track.art.indexOf("/assets/") !== -1 || track.art.indexOf("assets/covers/") !== -1)) {
+                  if (found.art && (!track.art || track.art.indexOf("/assets/") !== -1 || track.art.indexOf("assets/covers/") !== -1 || track.art.indexOf("data:image/") === 0)) {
                     track.art = found.art;
                   }
                   if (onDone) onDone(found);
@@ -2329,7 +2372,7 @@
 
       function preResolveTrackQueueAudio(tracks) {
         if (!tracks || !tracks.length) return;
-        var maxCount = Math.min(8, tracks.length);
+        var maxCount = Math.min(18, tracks.length);
         for (var i = 0; i < maxCount; i++) {
           (function (tr) {
             if (tr && !trackHasRealAudio(tr)) {
@@ -2746,12 +2789,24 @@
         var refreshTok = safeStorage.get("refresh_token") || "";
         var uname = safeStorage.get("username") || undefined;
 
+        if (!hasBackendApi()) {
+          firestoreApprovePairingRest(code, realToken, uname, refreshTok, function (fsOk) {
+            if (fsOk) {
+              showPortalFeedback("success", "✓ Connected on My iPhone! (Code " + code + ") Your iPhone & Home player are ready.");
+            } else {
+              showPortalFeedback("error", "Could not connect to code. Please check the 6-character code.");
+            }
+          });
+          return;
+        }
+
         var xhr = new XMLHttpRequest();
         xhr.open("POST", getBackendBaseUrl() + "/api/pair/approve", true);
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.timeout = 4500;
         xhr.onreadystatechange = function () {
           if (xhr.readyState === 4) {
+            markBackendApiStatus(xhr.status);
             var backendOk = false;
             var resolvedToken = realToken;
             var errMsg = "";
@@ -2902,12 +2957,22 @@
             safeStorage.remove("spotify_code_verifier");
             if (stateVal && stateVal.indexOf("PAIR:") === 0) {
               var pairCode = stateVal.substring(5).trim().toUpperCase();
+              if (!hasBackendApi()) {
+                firestoreApprovePairingRest(pairCode, data.access_token, safeStorage.get("username") || undefined, data.refresh_token || "", function (fsOk) {
+                  if (window.history && window.history.replaceState) {
+                    window.history.replaceState(null, "", getAppBasePath() + "#/pair?code=" + encodeURIComponent(pairCode));
+                  }
+                  callback({ pairedPortalCode: pairCode, portalPairedSuccess: fsOk });
+                });
+                return;
+              }
               var approveXhr = new XMLHttpRequest();
               approveXhr.open("POST", getBackendBaseUrl() + "/api/pair/approve", true);
               approveXhr.setRequestHeader("Content-Type", "application/json");
               approveXhr.timeout = 4500;
               approveXhr.onreadystatechange = function () {
                 if (approveXhr.readyState === 4) {
+                  markBackendApiStatus(approveXhr.status);
                   var okBackend = approveXhr.status >= 200 && approveXhr.status < 300;
                   firestoreApprovePairingRest(pairCode, data.access_token, safeStorage.get("username") || undefined, data.refresh_token || "", function (fsOk) {
                     if (window.history && window.history.replaceState) {
@@ -2953,12 +3018,24 @@
             callback({ error: msg || "Spotify OAuth exchange failed." });
           }
 
+          if (!hasBackendApi() && codeVerifier) {
+            exchangePkceDirectlyWithSpotify(clientId, authCode, redirectUri, codeVerifier, function (pkceRes) {
+              if (pkceRes && pkceRes.data && pkceRes.data.access_token) {
+                finalizeOAuthSuccess(pkceRes.data);
+              } else {
+                handleTokenFailure((pkceRes && pkceRes.error) || "Spotify direct PKCE exchange failed.");
+              }
+            });
+            return;
+          }
+
           var xhr = new XMLHttpRequest();
           xhr.open("POST", getBackendBaseUrl() + "/api/spotify/token", true);
           xhr.setRequestHeader("Content-Type", "application/json");
           xhr.timeout = 5000;
           xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
+              markBackendApiStatus(xhr.status);
               var data = {};
               try { data = JSON.parse(xhr.responseText || "{}"); } catch (e) {}
               if (xhr.status >= 200 && xhr.status < 300 && data && data.access_token) {
@@ -3051,10 +3128,14 @@
       };
 
       function fetchServerSpotifyConfig() {
+        if (!hasBackendApi()) return;
         var xhr = new XMLHttpRequest();
         xhr.open("GET", getBackendBaseUrl() + "/api/spotify/config", true);
         xhr.timeout = 4000;
         xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4) {
+            markBackendApiStatus(xhr.status);
+          }
           if (xhr.readyState === 4 && xhr.status === 200) {
             try {
               var cfg = JSON.parse(xhr.responseText || "{}");
@@ -3224,6 +3305,7 @@
 
       window.onBackendUrlChanged = function () {
         var val = getBackendBaseUrl();
+        backendApiUnavailable = false;
         safeStorage.set("backend_url", val);
         displayPairingCode(currentPairingCode || createRandom6Code());
         if (currentPairingCode) {
@@ -3232,6 +3314,23 @@
       };
 
       function fetchPairingCodeFromBackend() {
+        function handleCodeReady(code, fromServer) {
+          if (!code || code.length !== 6) {
+            code = createRandom6Code();
+            fromServer = false;
+          }
+          displayPairingCode(code);
+          if (!fromServer) {
+            firestoreCreatePendingRest(code);
+          }
+          startPollingBackendStatus(code);
+        }
+
+        if (!hasBackendApi()) {
+          handleCodeReady(createRandom6Code(), false);
+          return;
+        }
+
         var backendUrl = getBackendBaseUrl();
         setPollingStatus(true, "Connecting to backend...");
 
@@ -3240,25 +3339,13 @@
           reqUrl += "&ngrok-skip-browser-warning=69420";
         }
 
-        function handleCodeReady(code, fromServer) {
-          if (!code || code.length !== 6) {
-            code = createRandom6Code();
-            fromServer = false;
-          }
-          displayPairingCode(code);
-          if (!fromServer) {
-            // Static host (e.g. GitHub Pages) or offline backend -> register pending doc in Firestore directly
-            firestoreCreatePendingRest(code);
-          }
-          startPollingBackendStatus(code);
-        }
-
         var xhr = new XMLHttpRequest();
         xhr.open("GET", reqUrl, true);
         xhr.timeout = 4000;
 
         xhr.onreadystatechange = function () {
           if (xhr.readyState === 4) {
+            markBackendApiStatus(xhr.status);
             var code = "";
             var fromServer = false;
             if (xhr.status >= 200 && xhr.status < 300) {
@@ -3321,6 +3408,15 @@
           pollCount++;
           setPollingStatus(true, "Checking status every 3.5s (#" + pollCount + ")...");
 
+          if (!hasBackendApi()) {
+            firestoreGetPairingRest(code, function (fsRec) {
+              if (fsRec && fsRec.status === "paired") {
+                completePairing(fsRec.access_token || ("BQD_xpotify_app_token_" + code));
+              }
+            });
+            return;
+          }
+
           // Cache-busted GET prevents iOS 7.1.2 Safari from caching "pending"
           var statusUrl = baseStatusUrl + "?_t=" + Date.now();
           if (statusUrl.indexOf("ngrok") !== -1) {
@@ -3333,6 +3429,7 @@
 
           xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
+              markBackendApiStatus(xhr.status);
               if (xhr.status >= 200 && xhr.status < 300) {
                 try {
                   var data = JSON.parse(xhr.responseText);
@@ -3444,12 +3541,20 @@
           completePairing(tok, "✓ Connected on My iPhone (Code " + code + ") — Opening Home...");
         }
 
+        if (!hasBackendApi()) {
+          firestoreApprovePairingRest(code, realToken, uname, refreshTok, function (fsOk, fsTok) {
+            finalizeInlineConnect(fsTok || realToken);
+          });
+          return;
+        }
+
         var xhr = new XMLHttpRequest();
         xhr.open("POST", getBackendBaseUrl() + "/api/pair/approve", true);
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.timeout = 4000;
         xhr.onreadystatechange = function () {
           if (xhr.readyState === 4) {
+            markBackendApiStatus(xhr.status);
             var resolved = realToken;
             var backendOk = false;
             if (xhr.status >= 200 && xhr.status < 300) {
@@ -3490,6 +3595,11 @@
 
       window.simulatePairSuccess = function () {
         setPollingStatus(true, "Connecting on My iPhone...");
+        var tokFallback = "BQB_ios7_token_" + (currentPairingCode || "X7K92P");
+        if (!hasBackendApi()) {
+          completePairing(tokFallback, "✓ Connected on My iPhone — Opening Home...");
+          return;
+        }
         var xhr = new XMLHttpRequest();
         xhr.open("POST", getBackendBaseUrl() + "/api/pair/approve", true);
         xhr.setRequestHeader("Content-Type", "application/json");
@@ -3497,7 +3607,8 @@
 
         xhr.onreadystatechange = function () {
           if (xhr.readyState === 4) {
-            var tok = "BQB_ios7_token_" + (currentPairingCode || "X7K92P");
+            markBackendApiStatus(xhr.status);
+            var tok = tokFallback;
             if (xhr.status >= 200 && xhr.status < 300) {
               try {
                 var res = JSON.parse(xhr.responseText);
@@ -3511,13 +3622,13 @@
         };
 
         xhr.onerror = function () {
-          completePairing("BQB_ios7_token_" + (currentPairingCode || "X7K92P"), "✓ Connected on My iPhone — Opening Home...");
+          completePairing(tokFallback, "✓ Connected on My iPhone — Opening Home...");
         };
 
         try {
           xhr.send(JSON.stringify({ code: currentPairingCode }));
         } catch (e) {
-          completePairing("BQB_ios7_token_" + (currentPairingCode || "X7K92P"), "✓ Connected on My iPhone — Opening Home...");
+          completePairing(tokFallback, "✓ Connected on My iPhone — Opening Home...");
         }
       };
 
@@ -3636,6 +3747,9 @@
           setTrack(seedPlaylists[0].tracks[0], false);
         }
         preResolveTrackQueueAudio(seedPlaylists[0].tracks);
+        if (seedPlaylists[2] && seedPlaylists[2].tracks) {
+          preResolveTrackQueueAudio(seedPlaylists[2].tracks);
+        }
       }
 
       function fetchUserProfile() {
@@ -3780,12 +3894,18 @@
       }
 
       function fetchPlaylistsFromBackendOrSeed(token) {
+        if (!hasBackendApi()) {
+          livePlaylists = seedPlaylists;
+          renderPlaylistsList(seedPlaylists, false);
+          return;
+        }
         var xhr = new XMLHttpRequest();
         xhr.open("GET", getBackendBaseUrl() + "/api/spotify/playlists?token=" + encodeURIComponent(token), true);
         xhr.timeout = 5000;
 
         xhr.onreadystatechange = function () {
           if (xhr.readyState === 4) {
+            markBackendApiStatus(xhr.status);
             var playlistsToRender = seedPlaylists;
             var isLiveApi = false;
 
@@ -3824,7 +3944,7 @@
           var pl = list[i];
           var plArt = getSafeArtUrl(pl.image, LOCAL_COVERS.indie);
           html += '<div class="ios7-rich-cell" role="button" tabindex="0" aria-label="Playlist ' + escapeHtml(pl.name) + '" onclick="openPlaylistDetail(' + i + ')">' +
-            '<img src="' + plArt + '" class="rich-thumbnail" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + LOCAL_COVERS.indie + '\';" alt="Cover">' +
+            '<img src="' + plArt + '" class="rich-thumbnail" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + INLINE_SVG_COVERS.indie + '\';" alt="Cover">' +
             '<div class="rich-info">' +
               '<div class="rich-title">' + escapeHtml(pl.name) + '</div>' +
               '<div class="rich-subtitle">' + escapeHtml(pl.owner) + ' • ' + (pl.tracksCount || 20) + ' tracks</div>' +
@@ -3854,7 +3974,7 @@
         document.getElementById("detail-owner").innerHTML = "By " + escapeHtml(pl.owner);
         var coverImg = document.getElementById("detail-cover-img");
         coverImg.setAttribute("referrerpolicy", "no-referrer");
-        coverImg.onerror = function () { this.onerror = null; this.src = LOCAL_COVERS.indie; };
+        coverImg.onerror = function () { this.onerror = null; this.src = INLINE_SVG_COVERS.indie; };
         coverImg.src = getSafeArtUrl(pl.image, LOCAL_COVERS.indie);
 
         document.getElementById("view-library").className = "screen-view";
@@ -3877,6 +3997,10 @@
       var cachedClientAppTokenExpires = 0;
 
       function getSpotifyAppToken(callback) {
+        if (!hasBackendApi()) {
+          callback(null);
+          return;
+        }
         var now = Date.now();
         if (cachedClientAppToken && cachedClientAppTokenExpires > now + 30000) {
           callback(cachedClientAppToken);
@@ -4016,6 +4140,67 @@
       }
 
       function fetchPlaylistTracksFromBackendOrSeed(pl, token) {
+        function finishWithCuratedOrItunes() {
+          var fallbackTracks = getFallbackTracksForPlaylist(pl);
+          pl.tracks = fallbackTracks;
+          pl.tracksLoaded = true;
+          document.getElementById("detail-track-count").innerHTML = fallbackTracks.length + " Tracks";
+          activeTrackQueue = fallbackTracks;
+          renderTrackList(fallbackTracks);
+        }
+
+        if (!hasBackendApi()) {
+          // On static hosts (e.g. GitHub Pages), query direct Spotify Search API if user token is present, else curated playlist tracks
+          if (isRealUserSpotifyToken(token) && pl && pl.name) {
+            var cleanQ = normalizeClientPlaylistName(pl.name).replace(/\b(playlist|mix|old|songs|liked)\b/gi, " ").replace(/\s+/g, " ").trim();
+            if (cleanQ) {
+              var sXhr = new XMLHttpRequest();
+              sXhr.open("GET", "https://api.spotify.com/v1/search?q=" + encodeURIComponent(cleanQ) + "&type=track&limit=10", true);
+              sXhr.setRequestHeader("Authorization", "Bearer " + token);
+              sXhr.timeout = 5000;
+              sXhr.onreadystatechange = function () {
+                if (sXhr.readyState === 4) {
+                  if (sXhr.status === 200) {
+                    try {
+                      var sData = JSON.parse(sXhr.responseText || "{}");
+                      var items = (sData.tracks && sData.tracks.items) || [];
+                      if (items.length > 0) {
+                        var mapped = [];
+                        for (var i = 0; i < items.length; i++) {
+                          var t = items[i];
+                          mapped.push({
+                            id: t.id,
+                            uri: t.uri || ("spotify:track:" + t.id),
+                            title: t.name,
+                            artist: (t.artists || []).map(function (a) { return a.name; }).join(", ") || "Artist",
+                            album: t.album ? t.album.name : "",
+                            duration: t.duration_ms ? Math.round(t.duration_ms / 1000) : 180,
+                            art: (t.album && t.album.images && t.album.images[0]) ? t.album.images[0].url : LOCAL_COVERS.rock,
+                            preview_url: t.preview_url || ""
+                          });
+                        }
+                        pl.tracks = mapped;
+                        pl.tracksLoaded = true;
+                        pl.tracksCount = mapped.length;
+                        document.getElementById("detail-track-count").innerHTML = mapped.length + " Tracks";
+                        activeTrackQueue = mapped;
+                        renderTrackList(mapped);
+                        return;
+                      }
+                    } catch (e) {}
+                  }
+                  finishWithCuratedOrItunes();
+                }
+              };
+              sXhr.onerror = finishWithCuratedOrItunes;
+              sXhr.ontimeout = finishWithCuratedOrItunes;
+              try { sXhr.send(); return; } catch (e) {}
+            }
+          }
+          finishWithCuratedOrItunes();
+          return;
+        }
+
         var reqUrl = getBackendBaseUrl() + "/api/spotify/playlist-tracks?playlist_id=" + encodeURIComponent(pl.id || "") +
           "&name=" + encodeURIComponent(pl.name || "") +
           "&token=" + encodeURIComponent(token || "");
@@ -4026,6 +4211,7 @@
 
         xhr.onreadystatechange = function () {
           if (xhr.readyState === 4) {
+            markBackendApiStatus(xhr.status);
             if (xhr.status >= 200 && xhr.status < 300) {
               try {
                 var data = JSON.parse(xhr.responseText);
@@ -4041,22 +4227,14 @@
               } catch (err) {}
             }
 
-            var fallbackTracks = getFallbackTracksForPlaylist(pl);
-            pl.tracks = fallbackTracks;
-            pl.tracksLoaded = true;
-            document.getElementById("detail-track-count").innerHTML = fallbackTracks.length + " Tracks";
-            activeTrackQueue = fallbackTracks;
-            renderTrackList(fallbackTracks);
+            finishWithCuratedOrItunes();
           }
         };
 
         try {
           xhr.send();
         } catch (e) {
-          var fallbackTracks = getFallbackTracksForPlaylist(pl);
-          document.getElementById("detail-track-count").innerHTML = fallbackTracks.length + " Tracks";
-          activeTrackQueue = fallbackTracks;
-          renderTrackList(fallbackTracks);
+          finishWithCuratedOrItunes();
         }
       }
 
@@ -4081,7 +4259,7 @@
           var playingBadge = (isCurrent && isPlaying) ? ' <span style="font-size:11px; color:#1db954;">▶</span>' : '';
 
           html += '<div class="ios7-rich-cell" role="button" tabindex="0" aria-label="Play ' + escapeHtml(t.title) + ' by ' + escapeHtml(t.artist) + '" onclick="playSelectedTrack(' + i + ')">' +
-            '<img src="' + artUrl + '" class="rich-thumbnail" style="width:36px; height:36px;" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + LOCAL_COVERS.doom + '\';" alt="Art">' +
+            '<img src="' + artUrl + '" class="rich-thumbnail" style="width:36px; height:36px;" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + INLINE_SVG_COVERS.doom + '\';" alt="Art">' +
             '<div class="rich-info">' +
               '<div class="rich-title"' + activeStyle + '>' + (i + 1) + '. ' + escapeHtml(t.title) + playingBadge + '</div>' +
               '<div class="rich-subtitle">' + escapeHtml(t.artist) + '</div>' +
@@ -4210,15 +4388,43 @@
           }
         });
 
-        nativeAudio.addEventListener("error", function (e) {
-          console.warn("Audio element encountered error; falling back to local track MP3:", e);
-          if (isPlaying && currentTrack && (!nativeAudio.src || nativeAudio.src.indexOf("/audio/") === -1)) {
+        nativeAudio.addEventListener("error", function () {
+          var failedSrc = nativeAudio.src || "";
+          if (failedSrc.indexOf("/audio/") !== -1) {
+            localAudioUnavailable = true;
+          }
+          if (!isPlaying || !currentTrack) return;
+
+          if (!trackHasRealAudio(currentTrack)) {
+            resolveRealSongAudio(currentTrack, function (resolved) {
+              if (!isPlaying || !currentTrack) return;
+              if (resolved && resolved.audioUrl && nativeAudio.src !== resolved.audioUrl) {
+                isSwappingAudioSrc = true;
+                try {
+                  nativeAudio.src = resolved.audioUrl;
+                  nativeAudio.load();
+                  var p = nativeAudio.play();
+                  if (p && p.catch) p.catch(function () {});
+                } catch (e) { startSynthAudio(); }
+                setTimeout(function () { isSwappingAudioSrc = false; }, 250);
+              } else {
+                startSynthAudio();
+              }
+            });
+            return;
+          }
+
+          if (!localAudioUnavailable && !isStaticPagesHost() && failedSrc.indexOf("/audio/") === -1) {
             isSwappingAudioSrc = true;
-            nativeAudio.src = resolveAudioPath(localAudioUrls[0]);
-            nativeAudio.load();
-            var p = nativeAudio.play();
-            if (p && p.catch) p.catch(function () {});
+            try {
+              nativeAudio.src = resolveAudioPath(localAudioUrls[0]);
+              nativeAudio.load();
+              var p2 = nativeAudio.play();
+              if (p2 && p2.catch) p2.catch(function () {});
+            } catch (e) { startSynthAudio(); }
             setTimeout(function () { isSwappingAudioSrc = false; }, 250);
+          } else {
+            startSynthAudio();
           }
         });
       }
@@ -4300,45 +4506,83 @@
 
       function syncSpotifyPlayerState() {
         var token = safeStorage.get("access_token");
-        if (!isRealUserSpotifyToken(token)) return;
+        if (!isRealUserSpotifyToken(token) || spotifyPlayerPollDisabled) return;
         // Respect recent explicit pause so background polling doesn't overwrite paused state
         if (Date.now() - lastPauseTimestamp < 6000) return;
+
+        function applySpotifyPlayerPayload(item, isPlayingRemote, progressMs, deviceName) {
+          if (item && (isPlayingRemote || (currentTrack && currentTrack.title !== item.title))) {
+            currentTrack = {
+              id: item.id,
+              title: item.title,
+              artist: item.artist,
+              art: getSafeArtUrl(item.art, currentTrack ? currentTrack.art : LOCAL_COVERS.doom),
+              duration: item.duration || 180,
+              uri: item.uri
+            };
+            isPlaying = !!isPlayingRemote;
+            playbackProgress = progressMs ? Math.round(progressMs / 1000) : playbackProgress;
+            if (isPlaying) {
+              var nativeAudio = document.getElementById("native-audio-player");
+              if (nativeAudio) { try { nativeAudio.pause(); } catch (e) {} }
+            }
+            updatePlayerUI();
+            refreshCurrentListView();
+          }
+          if (deviceName) {
+            updateConnectedDeviceBadge(deviceName);
+          }
+        }
+
+        if (!hasBackendApi()) {
+          if (!spotifyWebPlayerDeviceId && !hasConfirmedConnectDevice) return;
+          var dXhr = new XMLHttpRequest();
+          dXhr.open("GET", "https://api.spotify.com/v1/me/player", true);
+          dXhr.setRequestHeader("Authorization", "Bearer " + token);
+          dXhr.timeout = 4000;
+          dXhr.onreadystatechange = function () {
+            if (dXhr.readyState === 4) {
+              if (dXhr.status === 401 || dXhr.status === 403) {
+                spotifyPlayerPollDisabled = true;
+                return;
+              }
+              if (dXhr.status === 200) {
+                if (Date.now() - lastPauseTimestamp < 6000) return;
+                try {
+                  var pData = JSON.parse(dXhr.responseText || "{}");
+                  if (pData && pData.item) {
+                    var artists = (pData.item.artists || []).map(function (a) { return a.name; }).join(", ");
+                    var art = (pData.item.album && pData.item.album.images && pData.item.album.images[0]) ? pData.item.album.images[0].url : LOCAL_COVERS.doom;
+                    applySpotifyPlayerPayload({
+                      id: pData.item.id,
+                      title: pData.item.name,
+                      artist: artists,
+                      art: art,
+                      duration: pData.item.duration_ms ? Math.round(pData.item.duration_ms / 1000) : 180,
+                      uri: pData.item.uri
+                    }, pData.is_playing, pData.progress_ms, pData.device ? pData.device.name : "");
+                  }
+                } catch (e) {}
+              }
+            }
+          };
+          try { dXhr.send(); } catch (e) {}
+          return;
+        }
 
         var xhr = new XMLHttpRequest();
         xhr.open("GET", getBackendBaseUrl() + "/api/spotify/player?token=" + encodeURIComponent(token), true);
         xhr.timeout = 4000;
         xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4) {
+            markBackendApiStatus(xhr.status);
+          }
           if (xhr.readyState === 4 && xhr.status === 200) {
             if (Date.now() - lastPauseTimestamp < 6000) return;
             try {
               var data = JSON.parse(xhr.responseText);
               if (data && data.track) {
-                var tr = data.track;
-                var dur = tr.duration || 180;
-                var pos = data.progress_ms ? Math.round(data.progress_ms / 1000) : playbackProgress;
-
-                if (data.is_playing || (currentTrack && currentTrack.title !== tr.title)) {
-                  currentTrack = {
-                    id: tr.id,
-                    title: tr.title,
-                    artist: tr.artist,
-                    art: getSafeArtUrl(tr.art, currentTrack ? currentTrack.art : LOCAL_COVERS.doom),
-                    duration: dur,
-                    uri: tr.uri
-                  };
-                  isPlaying = !!data.is_playing;
-                  playbackProgress = pos;
-                  if (isPlaying) {
-                    var nativeAudio = document.getElementById("native-audio-player");
-                    if (nativeAudio) { try { nativeAudio.pause(); } catch (e) {} }
-                  }
-                  updatePlayerUI();
-                  refreshCurrentListView();
-                }
-
-                if (data.device && data.device.name) {
-                  updateConnectedDeviceBadge(data.device.name);
-                }
+                applySpotifyPlayerPayload(data.track, data.is_playing, data.progress_ms, data.device ? data.device.name : "");
               }
             } catch (e) {}
           }
@@ -4411,12 +4655,19 @@
             try { dXhr.send(uri ? JSON.stringify({ uris: [uri] }) : "{}"); } catch (e) { startNativePlayback(track, index, reqGen); }
           }
 
+          if (!hasBackendApi()) {
+            fallbackToDirectSpotifyOrNative();
+            refreshCurrentListView();
+            return;
+          }
+
           var xhr = new XMLHttpRequest();
           xhr.open("POST", getBackendBaseUrl() + "/api/spotify/player/play", true);
           xhr.setRequestHeader("Content-Type", "application/json");
           xhr.timeout = 4000;
           xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
+              markBackendApiStatus(xhr.status);
               if (reqGen !== playbackGenerationId || !isPlaying) return;
               if (xhr.status >= 200 && xhr.status < 300) {
                 var res = {};
@@ -4469,42 +4720,70 @@
           try { audioCtx.suspend(); } catch (e) {}
         }
 
-        var audioUrl = getTrackAudioUrl(track, index);
-        track.preview_url = audioUrl;
-
-        try {
-          nativeAudio.src = audioUrl;
-          nativeAudio.load();
-          var playPromise = nativeAudio.play();
-          if (playPromise && playPromise.catch) {
-            playPromise.catch(function (err) {
-              console.warn("Native audio play promise:", err);
-            });
-          }
-        } catch (e) {
-          startSynthAudio();
-        }
-        setTimeout(function () { isSwappingAudioSrc = false; }, 250);
-
-        // If song wasn't pre-resolved yet to real .m4a audio, resolve and upgrade seamlessly
-        if (!trackHasRealAudio(track)) {
-          resolveRealSongAudio(track, function (resolved) {
-            if (!resolved || !resolved.audioUrl) return;
-            if (typeof reqGen === "number" && (reqGen !== playbackGenerationId || !isPlaying)) return;
-            if (currentTrack !== track) return;
-            updatePlayerUI();
-            if (nativeAudio.src !== resolved.audioUrl) {
-              isSwappingAudioSrc = true;
-              try {
-                nativeAudio.src = resolved.audioUrl;
-                nativeAudio.load();
-                var p2 = nativeAudio.play();
-                if (p2 && p2.catch) p2.catch(function () {});
-              } catch (e) {}
-              setTimeout(function () { isSwappingAudioSrc = false; }, 250);
+        if (trackHasRealAudio(track)) {
+          var realUrl = getTrackAudioUrl(track, index);
+          track.preview_url = realUrl;
+          try {
+            nativeAudio.src = realUrl;
+            nativeAudio.load();
+            var playPromise = nativeAudio.play();
+            if (playPromise && playPromise.catch) {
+              playPromise.catch(function () {});
             }
-          });
+          } catch (e) {
+            startSynthAudio();
+          }
+          setTimeout(function () { isSwappingAudioSrc = false; }, 250);
+          refreshCurrentListView();
+          return;
         }
+
+        // Only play local MP3 synchronously on hosts where /audio/* exists; on GitHub Pages resolve real AAC .m4a directly
+        if (!isStaticPagesHost() && !localAudioUnavailable) {
+          var fallbackUrl = getTrackAudioUrl(track, index);
+          track.preview_url = fallbackUrl;
+          try {
+            nativeAudio.src = fallbackUrl;
+            nativeAudio.load();
+            var pLocal = nativeAudio.play();
+            if (pLocal && pLocal.catch) pLocal.catch(function () {});
+          } catch (e) {
+            startSynthAudio();
+          }
+          setTimeout(function () { isSwappingAudioSrc = false; }, 250);
+        }
+
+        // Resolve real song .m4a audio immediately
+        resolveRealSongAudio(track, function (resolved) {
+          if (typeof reqGen === "number" && (reqGen !== playbackGenerationId || !isPlaying)) {
+            isSwappingAudioSrc = false;
+            return;
+          }
+          if (currentTrack !== track) {
+            isSwappingAudioSrc = false;
+            return;
+          }
+          if (!resolved || !resolved.audioUrl) {
+            isSwappingAudioSrc = false;
+            if (isStaticPagesHost() || localAudioUnavailable) {
+              startSynthAudio();
+            }
+            return;
+          }
+          updatePlayerUI();
+          if (nativeAudio.src !== resolved.audioUrl) {
+            isSwappingAudioSrc = true;
+            try {
+              nativeAudio.src = resolved.audioUrl;
+              nativeAudio.load();
+              var p2 = nativeAudio.play();
+              if (p2 && p2.catch) p2.catch(function () {});
+            } catch (e) {
+              startSynthAudio();
+            }
+            setTimeout(function () { isSwappingAudioSrc = false; }, 250);
+          }
+        });
         refreshCurrentListView();
       }
 
@@ -4512,12 +4791,13 @@
         currentTrack = track;
         playbackProgress = 0;
         isPlaying = autoPlay;
-        if (track && !track.preview_url) {
-          track.preview_url = getTrackAudioUrl(track, 0);
-        }
         var nativeAudio = document.getElementById("native-audio-player");
         if (nativeAudio && track) {
-          nativeAudio.src = resolveAudioPath(track.preview_url);
+          if (trackHasRealAudio(track) || (!isStaticPagesHost() && !localAudioUnavailable)) {
+            var nextUrl = getTrackAudioUrl(track, 0);
+            if (!track.preview_url) track.preview_url = nextUrl;
+            nativeAudio.src = nextUrl;
+          }
         }
         updatePlayerUI();
       }
@@ -4530,14 +4810,14 @@
         document.getElementById("mini-artist-text").innerHTML = escapeHtml(currentTrack.artist);
         var miniArt = document.getElementById("mini-art-img");
         miniArt.setAttribute("referrerpolicy", "no-referrer");
-        miniArt.onerror = function () { this.onerror = null; this.src = LOCAL_COVERS.doom; };
+        miniArt.onerror = function () { this.onerror = null; this.src = INLINE_SVG_COVERS.doom; };
         miniArt.src = artUrl;
 
         document.getElementById("full-title-text").innerHTML = escapeHtml(currentTrack.title);
         document.getElementById("full-artist-text").innerHTML = escapeHtml(currentTrack.artist);
         var fullArt = document.getElementById("full-art-img");
         fullArt.setAttribute("referrerpolicy", "no-referrer");
-        fullArt.onerror = function () { this.onerror = null; this.src = LOCAL_COVERS.doom; };
+        fullArt.onerror = function () { this.onerror = null; this.src = INLINE_SVG_COVERS.doom; };
         fullArt.src = artUrl;
 
         updatePlayPauseIcons();
@@ -4550,10 +4830,26 @@
         var targetId = (activeConnectTargetId && activeConnectTargetId !== "local_full" && activeConnectTargetId !== "phone")
           ? activeConnectTargetId
           : spotifyWebPlayerDeviceId;
+        if (!targetId && !hasConfirmedConnectDevice) return;
+
+        if (!hasBackendApi()) {
+          if (action === "play" || action === "pause") {
+            var spCmdUrl = "https://api.spotify.com/v1/me/player/" + action + (targetId ? ("?device_id=" + encodeURIComponent(targetId)) : "");
+            var dXhr = new XMLHttpRequest();
+            dXhr.open("PUT", spCmdUrl, true);
+            dXhr.setRequestHeader("Authorization", "Bearer " + token);
+            dXhr.setRequestHeader("Content-Type", "application/json");
+            try { dXhr.send((action === "play" && trackUri) ? JSON.stringify({ uris: [trackUri] }) : "{}"); } catch (e) {}
+          }
+          return;
+        }
 
         var xhr = new XMLHttpRequest();
         xhr.open("POST", getBackendBaseUrl() + "/api/spotify/player/" + action, true);
         xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4) markBackendApiStatus(xhr.status);
+        };
         xhr.send(JSON.stringify({
           token: token,
           track_uri: trackUri,
@@ -4750,11 +5046,17 @@
           try { dXhr.send(); } catch (e) { renderDevicesList([]); }
         }
 
+        if (!hasBackendApi()) {
+          fetchDirectDevicesFallback();
+          return;
+        }
+
         var xhr = new XMLHttpRequest();
         xhr.open("GET", getBackendBaseUrl() + "/api/spotify/devices?token=" + encodeURIComponent(token || ""), true);
         xhr.timeout = 4000;
         xhr.onreadystatechange = function () {
           if (xhr.readyState === 4) {
+            markBackendApiStatus(xhr.status);
             var devices = [];
             if (xhr.status === 200) {
               try {
@@ -4851,10 +5153,21 @@
 
         var token = safeStorage.get("access_token");
         if (isRealUserSpotifyToken(token) && deviceId && deviceId !== 'local_full' && deviceId !== 'phone' && deviceId !== 'web_receiver') {
-          var xhr = new XMLHttpRequest();
-          xhr.open("POST", getBackendBaseUrl() + "/api/spotify/player/transfer", true);
-          xhr.setRequestHeader("Content-Type", "application/json");
-          xhr.send(JSON.stringify({ token: token, device_id: deviceId }));
+          if (!hasBackendApi()) {
+            var dXhr = new XMLHttpRequest();
+            dXhr.open("PUT", "https://api.spotify.com/v1/me/player", true);
+            dXhr.setRequestHeader("Authorization", "Bearer " + token);
+            dXhr.setRequestHeader("Content-Type", "application/json");
+            try { dXhr.send(JSON.stringify({ device_ids: [deviceId], play: false })); } catch (e) {}
+          } else {
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", getBackendBaseUrl() + "/api/spotify/player/transfer", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+              if (xhr.readyState === 4) markBackendApiStatus(xhr.status);
+            };
+            xhr.send(JSON.stringify({ token: token, device_id: deviceId }));
+          }
         }
 
         closeDevicesModal();
@@ -4943,12 +5256,70 @@
         container.innerHTML = '<div style="padding: 30px; text-align: center; color: #8e8e93;"><div class="ios7-spinner" style="margin: 0 auto 10px;"></div>Loading your songs...</div>';
 
         var token = safeStorage.get("access_token") || "";
+
+        function showSeedLikedFallback() {
+          activeTrackQueue = seedPlaylists[0].tracks;
+          document.getElementById("detail-track-count").innerHTML = activeTrackQueue.length + " Songs";
+          renderTrackList(activeTrackQueue);
+        }
+
+        if (!hasBackendApi()) {
+          if (isRealUserSpotifyToken(token)) {
+            var sXhr = new XMLHttpRequest();
+            sXhr.open("GET", "https://api.spotify.com/v1/me/tracks?limit=50", true);
+            sXhr.setRequestHeader("Authorization", "Bearer " + token);
+            sXhr.timeout = 6000;
+            sXhr.onreadystatechange = function () {
+              if (sXhr.readyState === 4) {
+                if (sXhr.status === 200) {
+                  try {
+                    var d = JSON.parse(sXhr.responseText || "{}");
+                    var items = d.items || [];
+                    if (items.length > 0) {
+                      var likedTracks = [];
+                      for (var i = 0; i < items.length; i++) {
+                        var tr = items[i].track || items[i];
+                        if (!tr || !tr.name) continue;
+                        likedTracks.push({
+                          id: tr.id,
+                          uri: tr.uri || ("spotify:track:" + tr.id),
+                          title: tr.name,
+                          artist: (tr.artists || []).map(function (a) { return a.name; }).join(", ") || "Artist",
+                          album: tr.album ? tr.album.name : "",
+                          duration: tr.duration_ms ? Math.round(tr.duration_ms / 1000) : 180,
+                          art: (tr.album && tr.album.images && tr.album.images[0]) ? tr.album.images[0].url : LOCAL_COVERS.synth,
+                          preview_url: tr.preview_url || ""
+                        });
+                      }
+                      if (likedTracks.length > 0) {
+                        activeTrackQueue = likedTracks;
+                        document.getElementById("detail-track-count").innerHTML = likedTracks.length + " Songs";
+                        var b2 = document.getElementById("liked-count-badge");
+                        if (b2) b2.innerHTML = likedTracks.length;
+                        renderTrackList(likedTracks);
+                        return;
+                      }
+                    }
+                  } catch (e) {}
+                }
+                showSeedLikedFallback();
+              }
+            };
+            sXhr.onerror = showSeedLikedFallback;
+            sXhr.ontimeout = showSeedLikedFallback;
+            try { sXhr.send(); return; } catch (e) {}
+          }
+          showSeedLikedFallback();
+          return;
+        }
+
         var xhr = new XMLHttpRequest();
         xhr.open("GET", getBackendBaseUrl() + "/api/spotify/liked-tracks?token=" + encodeURIComponent(token), true);
         xhr.timeout = 8000;
 
         xhr.onreadystatechange = function () {
           if (xhr.readyState === 4) {
+            markBackendApiStatus(xhr.status);
             if (xhr.status >= 200 && xhr.status < 300) {
               try {
                 var data = JSON.parse(xhr.responseText);
@@ -4962,16 +5333,14 @@
                 }
               } catch (e) {}
             }
-            activeTrackQueue = seedPlaylists[0].tracks;
-            renderTrackList(activeTrackQueue);
+            showSeedLikedFallback();
           }
         };
 
         try {
           xhr.send();
         } catch (e) {
-          activeTrackQueue = seedPlaylists[0].tracks;
-          renderTrackList(activeTrackQueue);
+          showSeedLikedFallback();
         }
       };
 
@@ -5055,7 +5424,7 @@
           var playingBadge = (isCurrent && isPlaying) ? ' <span style="font-size:11px; color:#1db954;">▶</span>' : '';
 
           html += '<div class="ios7-rich-cell" role="button" tabindex="0" aria-label="Play ' + escapeHtml(song.title) + ' by ' + escapeHtml(song.artist) + '" onclick="playSelectedSearchResult(' + m + ')">' +
-            '<img src="' + artUrl + '" class="rich-thumbnail" style="width:36px; height:36px;" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + LOCAL_COVERS.doom + '\';" alt="Art">' +
+            '<img src="' + artUrl + '" class="rich-thumbnail" style="width:36px; height:36px;" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + INLINE_SVG_COVERS.doom + '\';" alt="Art">' +
             '<div class="rich-info">' +
               '<div class="rich-title"' + activeStyle + '>' + escapeHtml(song.title) + playingBadge + '</div>' +
               '<div class="rich-subtitle">' + escapeHtml(song.artist) + '</div>' +
@@ -5199,12 +5568,18 @@
           try { itXhr.send(); } catch (e) { finishSearch([], false); }
         }
 
+        if (!hasBackendApi()) {
+          searchDirectClientFallbacks();
+          return;
+        }
+
         var xhr = new XMLHttpRequest();
         xhr.open("GET", searchUrl, true);
         xhr.timeout = 7000;
 
         xhr.onreadystatechange = function () {
           if (xhr.readyState === 4) {
+            markBackendApiStatus(xhr.status);
             if (searchGen !== activeSearchGeneration) return;
             var liveTracks = [];
             var usedLive = false;
@@ -5268,7 +5643,7 @@
           var st = radioStations[i];
           var imgUrl = getSafeArtUrl(st.image, LOCAL_COVERS.synth);
           html += '<div class="radio-card" role="button" tabindex="0" aria-label="Station ' + escapeHtml(st.title) + '" onclick="openPlaylistDetail(' + (i % seedPlaylists.length) + ')">' +
-            '<img src="' + imgUrl + '" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + LOCAL_COVERS.synth + '\';" alt="' + escapeHtml(st.title) + '">' +
+            '<img src="' + imgUrl + '" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + INLINE_SVG_COVERS.synth + '\';" alt="' + escapeHtml(st.title) + '">' +
             '<div class="radio-card-body">' +
               '<div class="radio-card-title">' + escapeHtml(st.title) + '</div>' +
               '<div class="radio-card-desc">' + escapeHtml(st.desc) + '</div>' +
@@ -5294,7 +5669,7 @@
           var t = tracks[i];
           var artUrl = getSafeArtUrl(t.art, LOCAL_COVERS.doom);
           html += '<div class="ios7-rich-cell" role="button" tabindex="0" aria-label="Play ' + escapeHtml(t.title) + ' by ' + escapeHtml(t.artist) + '" onclick="playRecentTrack(' + i + ')">' +
-            '<img src="' + artUrl + '" class="rich-thumbnail" style="width:36px; height:36px;" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + LOCAL_COVERS.doom + '\';" alt="Art">' +
+            '<img src="' + artUrl + '" class="rich-thumbnail" style="width:36px; height:36px;" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + INLINE_SVG_COVERS.doom + '\';" alt="Art">' +
             '<div class="rich-info">' +
               '<div class="rich-title">' + escapeHtml(t.title) + '</div>' +
               '<div class="rich-subtitle">' + escapeHtml(t.artist) + '</div>' +
@@ -5455,11 +5830,22 @@
         }
 
         // ES5 Fallback for iOS 7.1.2 Safari via Express/Vercel account endpoint
+        if (!hasBackendApi()) {
+          safeStorage.set("username", username);
+          feedback.style.color = "#1db954";
+          feedback.innerText = "Saved locally on My iPhone.";
+          setTimeout(function () {
+            closeAccountModal();
+            initApp();
+          }, 700);
+          return;
+        }
         var acctXhr = new XMLHttpRequest();
         acctXhr.open("POST", getBackendBaseUrl() + "/api/account/" + (currentAccountMode === 'signup' ? "signup" : "signin"), true);
         acctXhr.setRequestHeader("Content-Type", "application/json");
         acctXhr.onreadystatechange = function () {
           if (acctXhr.readyState === 4) {
+            markBackendApiStatus(acctXhr.status);
             try {
               var res = JSON.parse(acctXhr.responseText || "{}");
               if (acctXhr.status >= 200 && acctXhr.status < 300) {
@@ -5487,13 +5873,15 @@
       };
 
       function linkSpotifyAccount(username, token, displayName) {
+        if (!hasBackendApi()) return;
         var xhr = new XMLHttpRequest();
         xhr.open("POST", getBackendBaseUrl() + "/api/account/link-spotify", true);
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.send(JSON.stringify({ username: username, spotify_token: token, display_name: displayName }));
         xhr.onreadystatechange = function () {
-          if (xhr.readyState === 4 && xhr.status === 200) {
-             closeAccountModal();
+          if (xhr.readyState === 4) {
+            markBackendApiStatus(xhr.status);
+            if (xhr.status === 200) closeAccountModal();
           }
         };
       }
