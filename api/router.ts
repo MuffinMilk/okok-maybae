@@ -8,9 +8,9 @@ import {
   fetchPlaylistTracksServer,
   fetchUserPlaylistsServer,
   getSpotifyAppToken,
+  resolveRealAudioServer,
   searchTracksServer
 } from '../src/server/spotifyApi';
-import { resolveFullLengthAudioUrl } from '../src/server/spotifyCore';
 import { getQueryParam, readJsonBody, sendJson, setCorsHeaders } from '../src/server/httpHelper';
 
 function extractRoutePath(req: any): string {
@@ -212,8 +212,8 @@ export default async function handler(req: any, res: any) {
     if (route === 'audio/resolve') {
       const title = getQueryParam(req, 'title');
       const artist = getQueryParam(req, 'artist');
-      const audioUrl = resolveFullLengthAudioUrl(title, artist);
-      return sendJson(res, 200, { audio_url: audioUrl, full_length: true });
+      const resolved = await resolveRealAudioServer(title, artist);
+      return sendJson(res, 200, resolved);
     }
 
     return sendJson(res, 404, { error: `Unknown API route: ${route}` });

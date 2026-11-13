@@ -144,9 +144,11 @@ export function normalizeSpotifyTrack(
     fallbackArt ||
     LOCAL_COVERS.doom;
 
-  const rawPreview = typeof tr.preview_url === 'string' ? tr.preview_url : '';
+  const rawPreview = typeof tr.preview_url === 'string' ? tr.preview_url.trim() : '';
   const previewUrl =
-    rawPreview && !isSnippetUrl(rawPreview) ? rawPreview : resolveFullLengthAudioUrl(tr.name, artist);
+    rawPreview && (rawPreview.indexOf('http://') === 0 || rawPreview.indexOf('https://') === 0)
+      ? rawPreview
+      : resolveFullLengthAudioUrl(tr.name, artist);
 
   const id = String(tr.id || `sp_${index}_${tr.name.slice(0, 12).replace(/\W+/g, '')}`);
   const uri = String(tr.uri || (tr.id ? `spotify:track:${tr.id}` : ''));

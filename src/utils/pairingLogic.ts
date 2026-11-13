@@ -172,3 +172,14 @@ export function isSpotifyOAuthCode(code: string, pathname?: string): boolean {
   if (/\/pair\/?$/.test(cleanPath)) return false;
   return true;
 }
+
+export function resolveBestTrackAudioUrl(track: any, index: number): string {
+  if (track && typeof track.resolved_audio_url === 'string' && track.resolved_audio_url.indexOf('http') === 0) {
+    return track.resolved_audio_url;
+  }
+  if (track && typeof track.preview_url === 'string' && track.preview_url.indexOf('http') === 0) {
+    return track.preview_url;
+  }
+  return selectAudioSource(track, index);
+}
+

@@ -14,7 +14,8 @@ import {
   isSpotifyConnectActive,
   getAppBasePath,
   resolveAppAssetPath,
-  isSpotifyOAuthCode
+  isSpotifyOAuthCode,
+  resolveBestTrackAudioUrl
 } from './pairingLogic';
 
 test('generatePairingCode generates 6 uppercase characters without ambiguous characters', () => {
@@ -126,3 +127,16 @@ test('isSpotifyOAuthCode distinguishes long OAuth codes from 6-char pairing code
   assert.equal(isSpotifyOAuthCode('QP2VUT', '/pair'), false);
   assert.equal(isSpotifyOAuthCode('AQBKPdClw-wbWU51unzTzy2c2i0UmNJMZ', '/pair'), false);
 });
+
+test('resolveBestTrackAudioUrl prefers real HTTP track audio over generic local fallback', () => {
+  assert.equal(
+    resolveBestTrackAudioUrl({ id: '1', preview_url: 'https://audio-ssl.itunes.apple.com/song.m4a' }, 0),
+    'https://audio-ssl.itunes.apple.com/song.m4a'
+  );
+  assert.equal(
+    resolveBestTrackAudioUrl({ id: '1', resolved_audio_url: 'https://p.scdn.co/mp3-preview/abc', preview_url: '/audio/track1.mp3' }, 0),
+    'https://p.scdn.co/mp3-preview/abc'
+  );
+  assert.match(resolveBestTrackAudioUrl({ id: 't1' }, 0), /^\/audio\/track\d\.mp3$/);
+});
+

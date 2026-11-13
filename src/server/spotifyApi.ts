@@ -11,6 +11,109 @@ import {
 } from './spotifyCore';
 
 let cachedAppToken: { token: string; expiresAt: number } | null = null;
+const resolvedAudioCache = new Map<string, { audioUrl: string; art?: string; expiresAt: number }>();
+
+function cleanSongSearchText(title: string, artist?: string): { cleanTitle: string; cleanArtist: string; query: string } {
+  const cleanTitle = (title || '')
+    .replace(/\([^)]*(feat|ft\.|with|remaster|version|edit|explicit|deluxe)[^)]*\)/gi, ' ')
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const cleanArtist = (artist || '')
+    .split(',')[0]
+    .replace(/\b(feat\.|ft\.|&)\b.*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return {
+    cleanTitle,
+    cleanArtist,
+    query: `${cleanTitle} ${cleanArtist}`.trim()
+  };
+}
+
+export async function resolveRealAudioServer(
+  title: string,
+  artist?: string
+): Promise<{ audio_url: string; art?: string; source: string }> {
+  const { cleanTitle, cleanArtist, query } = cleanSongSearchText(title, artist);
+  if (!query) {
+    return { audio_url: resolveFullLengthAudioUrl(title, artist), source: 'local_fallback' };
+  }
+
+  const cacheKey = query.toLowerCase();
+  const cached = resolvedAudioCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return { audio_url: cached.audioUrl, art: cached.art, source: 'itunes_cached' };
+  }
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2800);
+    const res = await fetch(
+      `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=6`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timer);
+    if (res.ok) {
+      const data: any = await res.json();
+      const results: any[] = Array.isArray(data?.results) ? data.results : [];
+      const titleLower = cleanTitle.toLowerCase();
+      const artistLower = cleanArtist.toLowerCase();
+      const asksCoverOrInst = /\b(cover|instrumental|karaoke|tribute)\b/i.test(title || '');
+
+      let best: any = null;
+      let bestScore = -999;
+
+      for (const r of results) {
+        if (!r || typeof r.previewUrl !== 'string' || !r.previewUrl.startsWith('http')) continue;
+        let score = 0;
+        const rTrack = String(r.trackName || '').toLowerCase();
+        const rArtist = String(r.artistName || '').toLowerCase();
+
+        if (artistLower && (rArtist.includes(artistLower) || artistLower.includes(rArtist))) score += 50;
+        if (titleLower && (rTrack.includes(titleLower) || titleLower.includes(rTrack))) score += 30;
+        if (!asksCoverOrInst && /\b(cover|karaoke|tribute|instrumental|8-bit|lullaby)\b/i.test(rTrack)) score -= 45;
+
+        if (score > bestScore) {
+          bestScore = score;
+          best = r;
+        }
+      }
+
+      if (best && best.previewUrl) {
+        const art = best.artworkUrl100 ? String(best.artworkUrl100).replace('100x100bb', '300x300bb') : undefined;
+        resolvedAudioCache.set(cacheKey, {
+          audioUrl: best.previewUrl,
+          art,
+          expiresAt: Date.now() + 6 * 3600 * 1000
+        });
+        return { audio_url: best.previewUrl, art, source: 'itunes_real' };
+      }
+    }
+  } catch {
+    // Fall back to local MP3 below
+  }
+
+  return { audio_url: resolveFullLengthAudioUrl(title, artist), source: 'local_fallback' };
+}
+
+export async function enrichTracksWithRealAudio(tracks: NormalizedTrack[], maxLookups = 12): Promise<NormalizedTrack[]> {
+  if (!Array.isArray(tracks) || tracks.length === 0) return tracks;
+  const targets = tracks.slice(0, maxLookups);
+  await Promise.all(
+    targets.map(async (tr) => {
+      if (!tr || (tr.preview_url && tr.preview_url.startsWith('http'))) return;
+      const resolved = await resolveRealAudioServer(tr.title, tr.artist);
+      if (resolved.audio_url && resolved.audio_url.startsWith('http')) {
+        tr.preview_url = resolved.audio_url;
+      }
+      if (resolved.art && (!tr.art || tr.art.startsWith('/assets/'))) {
+        tr.art = resolved.art;
+      }
+    })
+  );
+  return tracks;
+}
 
 export function getSpotifyCredentials(): { clientId: string; clientSecret: string } {
   return {
@@ -243,6 +346,7 @@ export async function fetchPlaylistTracksServer(params: {
     source = 'curated';
   }
 
+  await enrichTracksWithRealAudio(tracks, 12);
   return { name: playlistName, tracks, source };
 }
 
@@ -267,9 +371,38 @@ export async function searchTracksServer(
   }
 
   const localMatches = searchLocalCuratedTracks(query);
-  const combined = mergeUniqueTracks(liveTracks, localMatches);
+  let itunesMatches: NormalizedTrack[] = [];
 
-  // Assign deterministic full-length audio fallback URLs
+  if (liveTracks.length === 0) {
+    try {
+      const itRes = await fetch(
+        `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=12`
+      );
+      if (itRes.ok) {
+        const itData: any = await itRes.json();
+        const items: any[] = Array.isArray(itData?.results) ? itData.results : [];
+        itunesMatches = items
+          .filter((r) => r && r.trackName && r.previewUrl)
+          .map((r, idx) => ({
+            id: `it_${r.trackId || idx}`,
+            uri: '',
+            title: String(r.trackName),
+            artist: String(r.artistName || 'Artist'),
+            album: String(r.collectionName || ''),
+            duration: r.trackTimeMillis ? Math.round(Number(r.trackTimeMillis) / 1000) : 180,
+            art: r.artworkUrl100 ? String(r.artworkUrl100).replace('100x100bb', '300x300bb') : LOCAL_COVERS.indie,
+            preview_url: String(r.previewUrl)
+          }));
+      }
+    } catch {
+      // Ignore network fallback failure
+    }
+  }
+
+  const combined = mergeUniqueTracks(liveTracks, itunesMatches, localMatches);
+  await enrichTracksWithRealAudio(combined, 10);
+
+  // Assign deterministic fallback URLs only when unresolved
   for (const tr of combined) {
     if (!tr.preview_url) {
       tr.preview_url = resolveFullLengthAudioUrl(tr.title, tr.artist);
@@ -278,7 +411,7 @@ export async function searchTracksServer(
 
   return {
     tracks: combined,
-    source: liveTracks.length > 0 ? 'spotify_live' : 'local_catalog'
+    source: liveTracks.length > 0 ? 'spotify_live' : (itunesMatches.length > 0 ? 'itunes_live' : 'local_catalog')
   };
 }
 
@@ -304,6 +437,8 @@ export async function fetchLikedTracksServer(userToken?: string): Promise<Normal
   if (tracks.length === 0) {
     const searched = await searchTracksServer('Mac DeMarco', userToken);
     tracks = searched.tracks;
+  } else {
+    await enrichTracksWithRealAudio(tracks, 10);
   }
 
   return tracks;

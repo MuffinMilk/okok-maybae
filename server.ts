@@ -8,7 +8,6 @@ import {
   getPairingRecord,
   isValidPairingCode
 } from './src/server/pairingStore';
-import { resolveFullLengthAudioUrl } from './src/server/spotifyCore';
 import {
   exchangeSpotifyAuthCode,
   executePlayerActionServer,
@@ -19,6 +18,7 @@ import {
   fetchUserPlaylistsServer,
   getSpotifyAppToken,
   getSpotifyCredentials,
+  resolveRealAudioServer,
   searchTracksServer
 } from './src/server/spotifyApi';
 import { linkSpotifyToken } from './src/db/userDb';
@@ -190,10 +190,11 @@ app.get('/api/spotify/app-token', async (_req: Request, res: Response) => {
   return res.json({ access_token: token, client_id: clientId, configured: Boolean(token) });
 });
 
-app.get('/api/audio/resolve', (req: Request, res: Response) => {
+app.get('/api/audio/resolve', async (req: Request, res: Response) => {
   const title = (req.query.title || '').toString();
   const artist = (req.query.artist || '').toString();
-  return res.json({ audio_url: resolveFullLengthAudioUrl(title, artist) });
+  const resolved = await resolveRealAudioServer(title, artist);
+  return res.json(resolved);
 });
 
 // -------------------------------------------------------------

@@ -1435,15 +1435,15 @@
           <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.207-2.35-1.435-5.308-1.76-8.794-.963-.335.077-.67-.133-.746-.468-.077-.334.132-.67.467-.746 3.808-.87 7.076-.506 9.723 1.113.294.18.386.562.207.857zm1.225-2.723c-.226.367-.708.482-1.075.257-2.69-1.653-6.79-2.133-9.972-1.168-.413.125-.853-.109-.978-.521-.125-.413.109-.854.521-.979 3.632-1.102 8.147-.568 11.246 1.336.368.225.483.708.258 1.075zm.105-2.835C14.692 8.95 9.375 8.775 6.297 9.71c-.493.15-1.016-.13-1.166-.623-.15-.494.13-1.016.623-1.166 3.532-1.073 9.404-.866 13.115 1.337.444.263.59.838.327 1.282-.264.443-.838.59-1.28.326z"/>
         </svg>
       </div>
-      <h1 id="portal-heading" style="font-size: 21px; font-weight: 500; margin-bottom: 6px;">Pair iPhone 5 with Xpotify</h1>
+      <h1 id="portal-heading" style="font-size: 21px; font-weight: 500; margin-bottom: 6px;">Connect to Code</h1>
       <p id="portal-subheading" style="font-size: 13px; color: #8e8e93; margin-bottom: 18px; line-height: 1.45;">
-        Enter the 6-character code shown on your iPhone 5 Safari screen to link playback and playlists.
+        Enter the 6-character <strong>Code for Connect</strong> shown on your iPhone to connect and go straight to Home.
       </p>
 
       <div id="portal-feedback-banner" class="portal-feedback" role="status"></div>
 
       <label for="portal-pair-code-input" style="display: block; text-align: left; font-size: 11px; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px;">
-        6-Character Pairing Code
+        Connect to Code
       </label>
       <input type="text" id="portal-pair-code-input" class="portal-code-input" maxlength="6" placeholder="------" autocomplete="off" autocapitalize="characters">
 
@@ -1451,10 +1451,10 @@
         Log In with Spotify Account
       </button>
       <button type="button" class="ios7-button secondary" id="btn-portal-instant" onclick="portalApproveInstant()" style="height: 44px; font-size: 14px; margin-bottom: 10px;">
-        Pair Device Instantly
+        Connect to Code Now
       </button>
       <button type="button" class="ios7-button ghost" onclick="exitPairPortalToApp()" style="height: 42px; font-size: 13px; margin-bottom: 10px;">
-        Open Xpotify Web Player
+        Go to Home &amp; Play Songs
       </button>
       <button type="button" onclick="openSpotifyClientIdModal()" style="background:none; border:none; color:#8e8e93; font-size:11px; text-decoration:underline; cursor:pointer;">
         Configure Spotify Client ID / Redirect URI
@@ -1462,8 +1462,8 @@
     </div>
   </main>
 
-  <!-- Hidden native HTML5 audio element for actual iOS 7 audio preview playback -->
-  <audio id="native-audio-player" preload="none"></audio>
+  <!-- Hidden native HTML5 audio element for actual iOS 7 audio playback -->
+  <audio id="native-audio-player" preload="auto" playsinline webkit-playsinline></audio>
 
   <div id="app-viewport-wrapper">
 
@@ -1503,7 +1503,7 @@
       <div class="screen-view active" id="view-pair">
         <div class="ios7-nav-bar">
           <button class="nav-btn" onclick="openAccountModal()" id="pair-nav-account-btn" style="color:#1db954; font-size:12px;">👤 Sign In</button>
-          <div class="nav-title">Pair Device</div>
+          <div class="nav-title">Connect Spotify</div>
           <button class="nav-btn" onclick="openDirectTokenModal()">Token</button>
         </div>
 
@@ -1515,39 +1515,46 @@
               </svg>
             </div>
 
-            <h1 class="pair-title">Connect Xpotify</h1>
-            <p class="pair-subtitle">Pair your iPhone 5 with your Spotify account to enable seamless music streaming.</p>
+            <h1 class="pair-title">Connect Your Spotify</h1>
+            <p class="pair-subtitle">Use your <strong>Code for Connect</strong> on another device, or enter a code below to <strong>Connect to Code</strong>.</p>
 
             <div id="pair-account-banner" role="button" tabindex="0" onclick="openAccountModal()" style="font-size: 11px; color: #1db954; background: rgba(29, 185, 84, 0.12); border: 1px solid rgba(29, 185, 84, 0.3); border-radius: 8px; padding: 6px 12px; margin-bottom: 12px; cursor: pointer; display: none;">
               👤 Account: <strong id="pair-account-name">Muffin</strong> • Tap to manage
             </div>
 
-            <!-- 6-character Code Display -->
-            <div class="pairing-code-card">
-              <div class="pairing-code-label">Your Pairing Code</div>
+            <!-- 1. CODE FOR CONNECT Card -->
+            <div class="pairing-code-card" style="margin-bottom: 10px;">
+              <div class="pairing-code-label" style="color:#1db954; font-weight:500;">CODE FOR CONNECT</div>
               <div class="pairing-code-display" id="pairing-code-display">------</div>
-            </div>
-
-            <!-- Mandatory User Instructions -->
-            <div class="instructions-text">
-              Open <a id="pair-portal-link" href="#/pair" target="_blank" style="color:#1db954; text-decoration:underline; font-weight:400;">/pair</a> on your phone or computer and enter this code.
-              <div style="font-size:10.5px; color:#ff9f0a; margin-top:6px; line-height:1.3; padding:5px 8px; background:rgba(255,159,10,0.1); border-radius:6px; border:1px solid rgba(255,159,10,0.2);">
-                ⚠️ Use our <a id="pair-portal-link-2" href="#/pair" target="_blank" style="color:#ffffff; text-decoration:underline;">/pair portal</a> or log in below (<code>spotify.com/pair</code> is TV-only).
+              <div style="font-size:10.5px; color:#8e8e93; margin-top:4px; line-height:1.3;">
+                Enter this code on another phone/PC or <a id="pair-portal-link" href="#/pair" target="_blank" style="color:#1db954; text-decoration:underline;">open #/pair</a>
               </div>
             </div>
 
-            <!-- Polling Status Banner -->
+            <!-- 2. CONNECT TO CODE Card -->
+            <div class="pairing-code-card" style="padding: 12px 12px 10px; margin-bottom: 10px;">
+              <div class="pairing-code-label" style="color:#ffffff; font-weight:500; margin-bottom: 6px;">CONNECT TO CODE</div>
+              <div style="display:-webkit-box; display:-webkit-flex; display:flex; -webkit-box-align:center; -webkit-align-items:center; align-items:center;">
+                <input type="text" id="inline-connect-code-input" maxlength="6" placeholder="ENTER CODE" autocomplete="off" autocapitalize="characters" style="-webkit-box-flex:1; -webkit-flex:1; flex:1; min-width:0; height:36px; background:#0b0b0d; border:1px solid #333336; -webkit-border-radius:8px; border-radius:8px; color:#ffffff; font-family:'Courier New', Courier, monospace; font-size:16px; letter-spacing:3px; text-transform:uppercase; text-align:center; margin-right:8px; outline:none;" onkeydown="if(event.keyCode===13) connectToEnteredCode()" />
+                <button type="button" id="btn-connect-to-code" onclick="connectToEnteredCode()" style="height:36px; padding:0 12px; background:#1db954; color:#000000; border:none; -webkit-border-radius:8px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">Connect</button>
+              </div>
+              <a id="pair-portal-link-2" href="#/pair" target="_blank" style="display:inline-block; font-size:10px; color:#8e8e93; text-decoration:underline; margin-top:6px;">Open Desktop Connect Portal</a>
+            </div>
+
+            <!-- Connected on My iPhone / Polling Status Banner -->
+            <div id="inline-connect-feedback" style="display:none; font-size:12px; font-weight:500; color:#d8ffe6; background:rgba(29,185,84,0.2); border:1px solid #1db954; border-radius:10px; padding:9px 12px; margin-bottom:10px; text-align:center;"></div>
+
             <div class="polling-status-indicator" id="polling-status">
               <div class="ios7-spinner"></div>
-              <span id="polling-text">Connecting to backend...</span>
+              <span id="polling-text">Waiting for connection...</span>
             </div>
 
             <!-- Visible OAuth / Pairing Error Banner -->
             <div id="pairing-auth-error" style="display:none; font-size:11px; color:#ffd6d4; background:rgba(255,59,48,0.16); border:1px solid #ff3b30; border-radius:8px; padding:7px 10px; margin-bottom:10px; text-align:left; line-height:1.35;"></div>
 
-            <!-- Primary 1-Tap Pair Button with Live Spotify Token -->
+            <!-- Primary 1-Tap Connect on My iPhone -->
             <button class="ios7-button spotify-connect" id="btn-simulate-pair" onclick="simulatePairSuccess()" style="font-size:14px; height:38px; margin-bottom:7px;">
-              Pair Device Now (1-Tap Connect)
+              Connect on My iPhone (1-Tap)
             </button>
 
             <!-- Direct Spotify Account Login Button -->
@@ -1556,7 +1563,7 @@
             </button>
 
             <button class="ios7-button ghost" onclick="refreshPairingCode()" style="height:32px;">
-              Regenerate Code
+              New Code
             </button>
 
             <!-- Backend Config Disclosure -->
@@ -2159,17 +2166,14 @@
         return resolveAppAssetUrl(url);
       }
 
-      function isSnippetUrl(url) {
-        if (!url) return false;
-        var lower = url.toLowerCase();
-        return lower.indexOf("apple.com") !== -1 ||
-               lower.indexOf("itunes") !== -1 ||
-               lower.indexOf("deezer.com") !== -1 ||
-               lower.indexOf("preview") !== -1;
-      }
-
       function getTrackAudioUrl(track, index) {
-        if (track && track.preview_url && track.preview_url.length > 5 && !isSnippetUrl(track.preview_url)) {
+        if (track && track.resolved_audio_url && track.resolved_audio_url.indexOf("http") === 0) {
+          return track.resolved_audio_url;
+        }
+        if (track && track.preview_url && track.preview_url.length > 5 && track.preview_url.indexOf("http") === 0) {
+          return track.preview_url;
+        }
+        if (track && track.preview_url && track.preview_url.length > 5) {
           return resolveAudioPath(track.preview_url);
         }
         var idx = (typeof index === "number") ? index : 0;
@@ -2182,6 +2186,157 @@
         }
         var path = localAudioUrls[Math.abs(idx) % localAudioUrls.length];
         return resolveAudioPath(path);
+      }
+
+      // Real song audio resolver (iTunes Search CORS + /api/audio/resolve fallback)
+      var realAudioCache = {};
+
+      function cleanSongSearchParts(title, artist) {
+        var cleanTitle = String(title || "")
+          .replace(/\([^)]*(feat|ft\.|with|remaster|version|edit|explicit|deluxe)[^)]*\)/gi, " ")
+          .replace(/\[[^\]]*\]/g, " ")
+          .replace(/\s+/g, " ")
+          .replace(/^\s+|\s+$/g, "");
+        var cleanArtist = String(artist || "")
+          .split(",")[0]
+          .replace(/\b(feat\.|ft\.|&)\b.*$/i, "")
+          .replace(/\s+/g, " ")
+          .replace(/^\s+|\s+$/g, "");
+        return {
+          cleanTitle: cleanTitle,
+          cleanArtist: cleanArtist,
+          query: (cleanTitle + " " + cleanArtist).replace(/^\s+|\s+$/g, "")
+        };
+      }
+
+      function trackHasRealAudio(track) {
+        if (!track) return false;
+        if (track.resolved_audio_url && track.resolved_audio_url.indexOf("http") === 0) return true;
+        if (track.preview_url && track.preview_url.indexOf("http") === 0) return true;
+        return false;
+      }
+
+      function resolveRealSongAudio(track, onDone) {
+        if (!track || !track.title) {
+          if (onDone) onDone(null);
+          return;
+        }
+        if (trackHasRealAudio(track)) {
+          var existingUrl = track.resolved_audio_url || track.preview_url;
+          if (onDone) onDone({ audioUrl: existingUrl, art: track.art });
+          return;
+        }
+
+        var parts = cleanSongSearchParts(track.title, track.artist);
+        var cacheKey = parts.query.toLowerCase();
+        if (!cacheKey) {
+          if (onDone) onDone(null);
+          return;
+        }
+
+        if (realAudioCache[cacheKey]) {
+          var hit = realAudioCache[cacheKey];
+          track.resolved_audio_url = hit.audioUrl;
+          track.preview_url = hit.audioUrl;
+          if (hit.art && (!track.art || track.art.indexOf("/assets/") !== -1 || track.art.indexOf("assets/covers/") !== -1)) {
+            track.art = hit.art;
+          }
+          if (onDone) onDone(hit);
+          return;
+        }
+
+        function queryBackendFallback() {
+          var bXhr = new XMLHttpRequest();
+          bXhr.open("GET", getBackendBaseUrl() + "/api/audio/resolve?title=" + encodeURIComponent(track.title) + "&artist=" + encodeURIComponent(track.artist || ""), true);
+          bXhr.timeout = 3000;
+          bXhr.onreadystatechange = function () {
+            if (bXhr.readyState === 4) {
+              if (bXhr.status >= 200 && bXhr.status < 300) {
+                try {
+                  var bData = JSON.parse(bXhr.responseText || "{}");
+                  if (bData && bData.audio_url && bData.audio_url.indexOf("http") === 0) {
+                    var resObj = { audioUrl: bData.audio_url, art: bData.art || "" };
+                    realAudioCache[cacheKey] = resObj;
+                    track.resolved_audio_url = resObj.audioUrl;
+                    track.preview_url = resObj.audioUrl;
+                    if (resObj.art && (!track.art || track.art.indexOf("/assets/") !== -1 || track.art.indexOf("assets/covers/") !== -1)) {
+                      track.art = resObj.art;
+                    }
+                    if (onDone) onDone(resObj);
+                    return;
+                  }
+                } catch (e) {}
+              }
+              if (onDone) onDone(null);
+            }
+          };
+          bXhr.onerror = function () { if (onDone) onDone(null); };
+          bXhr.ontimeout = function () { if (onDone) onDone(null); };
+          try { bXhr.send(); } catch (e) { if (onDone) onDone(null); }
+        }
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "https://itunes.apple.com/search?term=" + encodeURIComponent(parts.query) + "&entity=song&limit=6", true);
+        xhr.timeout = 3500;
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+              try {
+                var data = JSON.parse(xhr.responseText || "{}");
+                var results = data.results || [];
+                var titleLower = parts.cleanTitle.toLowerCase();
+                var artistLower = parts.cleanArtist.toLowerCase();
+                var asksCoverOrInst = /\b(cover|instrumental|karaoke|tribute)\b/i.test(track.title || "");
+                var best = null;
+                var bestScore = -999;
+
+                for (var i = 0; i < results.length; i++) {
+                  var r = results[i];
+                  if (!r || !r.previewUrl || r.previewUrl.indexOf("http") !== 0) continue;
+                  var score = 0;
+                  var rTrack = String(r.trackName || "").toLowerCase();
+                  var rArtist = String(r.artistName || "").toLowerCase();
+                  if (artistLower && (rArtist.indexOf(artistLower) !== -1 || artistLower.indexOf(rArtist) !== -1)) score += 50;
+                  if (titleLower && (rTrack.indexOf(titleLower) !== -1 || titleLower.indexOf(rTrack) !== -1)) score += 30;
+                  if (!asksCoverOrInst && /\b(cover|karaoke|tribute|instrumental|8-bit|lullaby)\b/i.test(rTrack)) score -= 45;
+                  if (score > bestScore) {
+                    bestScore = score;
+                    best = r;
+                  }
+                }
+
+                if (best && best.previewUrl) {
+                  var hiArt = best.artworkUrl100 ? best.artworkUrl100.replace("100x100bb", "300x300bb") : "";
+                  var found = { audioUrl: best.previewUrl, art: hiArt };
+                  realAudioCache[cacheKey] = found;
+                  track.resolved_audio_url = found.audioUrl;
+                  track.preview_url = found.audioUrl;
+                  if (found.art && (!track.art || track.art.indexOf("/assets/") !== -1 || track.art.indexOf("assets/covers/") !== -1)) {
+                    track.art = found.art;
+                  }
+                  if (onDone) onDone(found);
+                  return;
+                }
+              } catch (e) {}
+            }
+            queryBackendFallback();
+          }
+        };
+        xhr.onerror = function () { queryBackendFallback(); };
+        xhr.ontimeout = function () { queryBackendFallback(); };
+        try { xhr.send(); } catch (e) { queryBackendFallback(); }
+      }
+
+      function preResolveTrackQueueAudio(tracks) {
+        if (!tracks || !tracks.length) return;
+        var maxCount = Math.min(8, tracks.length);
+        for (var i = 0; i < maxCount; i++) {
+          (function (tr) {
+            if (tr && !trackHasRealAudio(tr)) {
+              resolveRealSongAudio(tr, null);
+            }
+          })(tracks[i]);
+        }
       }
 
       // ES5 Firestore REST fallback config for pairing sync across static/multi-origin hosts
@@ -2615,9 +2770,9 @@
             // Always mirror paired state into Firestore REST so iPhone 5 on any host/origin picks it up
             firestoreApprovePairingRest(code, resolvedToken, uname, refreshTok, function (fsOk) {
               if (backendOk || fsOk) {
-                showPortalFeedback("success", "Device " + code + " paired! Look at your iPhone 5 Safari screen — it will connect automatically within a few seconds.");
+                showPortalFeedback("success", "✓ Connected on My iPhone! (Code " + code + ") Your iPhone & Home player are ready.");
               } else {
-                showPortalFeedback("error", errMsg || "Could not approve pairing code. Please check the 6-character code.");
+                showPortalFeedback("error", errMsg || "Could not connect to code. Please check the 6-character code.");
               }
             });
           }
@@ -2625,7 +2780,7 @@
         xhr.onerror = function () {
           firestoreApprovePairingRest(code, realToken, uname, refreshTok, function (fsOk) {
             if (fsOk) {
-              showPortalFeedback("success", "Device " + code + " paired! Look at your iPhone 5 Safari screen — it will connect automatically within a few seconds.");
+              showPortalFeedback("success", "✓ Connected on My iPhone! (Code " + code + ") Your iPhone & Home player are ready.");
             } else {
               showPortalFeedback("error", "Could not reach pairing server. Check your network and try again.");
             }
@@ -3025,8 +3180,8 @@
           } else if (token && token.length > 5) {
             var gSubEl = document.getElementById("user-account-subtitle");
             var gBadgeEl = document.getElementById("user-spotify-sync-badge");
-            if (gSubEl) gSubEl.innerText = "Tap to link a Spotify or Xpotify account";
-            if (gBadgeEl) gBadgeEl.innerText = "Paired";
+            if (gSubEl) gSubEl.innerText = "Connected on My iPhone • Ready to play";
+            if (gBadgeEl) gBadgeEl.innerText = "My iPhone";
           }
 
           if (token && token.length > 5 && !(authOutcome && authOutcome.error && !isRealUserSpotifyToken(token))) {
@@ -3225,53 +3380,144 @@
         if (el) el.innerHTML = message;
       }
 
-      function completePairing(accessToken) {
+      function showInlineConnectBanner(type, text) {
+        var box = document.getElementById("inline-connect-feedback");
+        if (!box) return;
+        box.style.display = "block";
+        if (type === "error") {
+          box.style.background = "rgba(255,59,48,0.18)";
+          box.style.borderColor = "#ff3b30";
+          box.style.color = "#ffd6d4";
+        } else {
+          box.style.background = "rgba(29,185,84,0.22)";
+          box.style.borderColor = "#1db954";
+          box.style.color = "#d8ffe6";
+        }
+        box.innerHTML = escapeHtml(text);
+      }
+
+      function completePairing(accessToken, connectedMsg) {
         if (pollTimer) {
           clearInterval(pollTimer);
           pollTimer = null;
         }
 
         safeStorage.set("access_token", accessToken);
-        setPollingStatus(false, "Device Paired! Loading...");
+        safeStorage.set("connected_device_label", "My iPhone");
+        activeConnectTargetName = "My iPhone";
+        updateConnectedDeviceBadge("My iPhone");
+
+        var bannerMsg = connectedMsg || "✓ Connected on My iPhone — Taking you to Home...";
+        setPollingStatus(false, bannerMsg);
+        showInlineConnectBanner("success", bannerMsg);
 
         if (!isRealUserSpotifyToken(accessToken) && !safeStorage.get("username")) {
           var gSubEl = document.getElementById("user-account-subtitle");
           var gBadgeEl = document.getElementById("user-spotify-sync-badge");
-          if (gSubEl) gSubEl.innerText = "Paired via code — tap to link Spotify";
-          if (gBadgeEl) gBadgeEl.innerText = "Paired";
+          if (gSubEl) gSubEl.innerText = "Connected on My iPhone • Ready to play";
+          if (gBadgeEl) gBadgeEl.innerText = "My iPhone";
         }
 
         setTimeout(function () {
           showMainDashboard();
-        }, 350);
+        }, 700);
       }
 
-      window.simulatePairSuccess = function () {
-        setPollingStatus(true, "Connecting to Spotify API...");
+      window.connectToEnteredCode = function () {
+        var input = document.getElementById("inline-connect-code-input");
+        var code = input ? input.value.replace(/\s+/g, "").toUpperCase() : "";
+        if (!code || code.length !== 6) {
+          showInlineConnectBanner("error", "Enter a valid 6-character code first.");
+          return;
+        }
+
+        showInlineConnectBanner("success", "Connecting to code " + code + "...");
+        setPollingStatus(true, "Connecting to " + code + "...");
+
+        var activeToken = safeStorage.get("access_token") || "";
+        var realToken = isRealUserSpotifyToken(activeToken) ? activeToken : "";
+        var refreshTok = safeStorage.get("refresh_token") || "";
+        var uname = safeStorage.get("username") || undefined;
+
+        function finalizeInlineConnect(resolvedToken) {
+          var tok = resolvedToken || realToken || ("BQD_xpotify_app_token_" + code);
+          completePairing(tok, "✓ Connected on My iPhone (Code " + code + ") — Opening Home...");
+        }
+
         var xhr = new XMLHttpRequest();
         xhr.open("POST", getBackendBaseUrl() + "/api/pair/approve", true);
         xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.timeout = 5000;
+        xhr.timeout = 4000;
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4) {
+            var resolved = realToken;
+            var backendOk = false;
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                var res = JSON.parse(xhr.responseText || "{}");
+                if (res && res.success) {
+                  backendOk = true;
+                  resolved = res.access_token || resolved;
+                }
+              } catch (e) {}
+            }
+            firestoreApprovePairingRest(code, resolved, uname, refreshTok, function (fsOk, fsTok) {
+              if (backendOk || fsOk) {
+                finalizeInlineConnect(fsTok || resolved);
+              } else {
+                // Local direct connect fallback so user never gets blocked on offline hosts
+                finalizeInlineConnect(resolved);
+              }
+            });
+          }
+        };
+        xhr.onerror = function () {
+          firestoreApprovePairingRest(code, realToken, uname, refreshTok, function (fsOk, fsTok) {
+            finalizeInlineConnect(fsTok || realToken);
+          });
+        };
+        try {
+          xhr.send(JSON.stringify({
+            code: code,
+            token: realToken || undefined,
+            refresh_token: refreshTok || undefined,
+            username: uname
+          }));
+        } catch (e) {
+          finalizeInlineConnect(realToken);
+        }
+      };
+
+      window.simulatePairSuccess = function () {
+        setPollingStatus(true, "Connecting on My iPhone...");
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", getBackendBaseUrl() + "/api/pair/approve", true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.timeout = 4500;
 
         xhr.onreadystatechange = function () {
           if (xhr.readyState === 4) {
+            var tok = "BQB_ios7_token_" + (currentPairingCode || "X7K92P");
             if (xhr.status >= 200 && xhr.status < 300) {
               try {
                 var res = JSON.parse(xhr.responseText);
                 if (res && res.access_token) {
-                  completePairing(res.access_token);
-                  return;
+                  tok = res.access_token;
                 }
               } catch (e) {}
             }
-            completePairing("BQB_ios7_token_" + (currentPairingCode || "X7K92P"));
+            completePairing(tok, "✓ Connected on My iPhone — Opening Home...");
           }
+        };
+
+        xhr.onerror = function () {
+          completePairing("BQB_ios7_token_" + (currentPairingCode || "X7K92P"), "✓ Connected on My iPhone — Opening Home...");
         };
 
         try {
           xhr.send(JSON.stringify({ code: currentPairingCode }));
         } catch (e) {
-          completePairing("BQB_ios7_token_" + (currentPairingCode || "X7K92P"));
+          completePairing("BQB_ios7_token_" + (currentPairingCode || "X7K92P"), "✓ Connected on My iPhone — Opening Home...");
         }
       };
 
@@ -3381,6 +3627,7 @@
 
         activeTab = "library";
         updateTabBarUI();
+        updateConnectedDeviceBadge(safeStorage.get("connected_device_label") || "My iPhone");
 
         fetchUserProfile();
         initSpotifyWebPlayer();
@@ -3388,6 +3635,7 @@
         if (!currentTrack && seedPlaylists[0] && seedPlaylists[0].tracks[0]) {
           setTrack(seedPlaylists[0].tracks[0], false);
         }
+        preResolveTrackQueueAudio(seedPlaylists[0].tracks);
       }
 
       function fetchUserProfile() {
@@ -3842,6 +4090,7 @@
           '</div>';
         }
         container.innerHTML = html;
+        preResolveTrackQueueAudio(tracks);
       }
 
       window.playSelectedTrack = function (trackIndex) {
@@ -3875,11 +4124,12 @@
       };
 
       // -----------------------------------------------------------------
-      // Audio Playback Engine (HTML5 Native Audio + Byte Range Support)
+      // Audio Playback Engine (HTML5 Native Audio + Real Song Resolver)
       // -----------------------------------------------------------------
       var isSeeking = false;
       var playbackGenerationId = 0;
       var lastPauseTimestamp = 0;
+      var isSwappingAudioSrc = false;
 
       function silenceAllLocalAudio() {
         var nativeAudio = document.getElementById("native-audio-player");
@@ -3916,9 +4166,9 @@
           }
         });
 
-        nativeAudio.addEventListener("play", function () {
-          // Guard against stray late audio events shortly after user pressed pause
-          if (!isPlaying || (Date.now() - lastPauseTimestamp < 700)) {
+        nativeAudio.addEventListener("playing", function () {
+          isSwappingAudioSrc = false;
+          if (!isPlaying && (Date.now() - lastPauseTimestamp < 700)) {
             try { nativeAudio.pause(); } catch (e) {}
             return;
           }
@@ -3927,14 +4177,26 @@
           refreshCurrentListView();
         });
 
+        nativeAudio.addEventListener("play", function () {
+          // Only abort if user explicitly pressed Pause within the last 700ms
+          if (!isPlaying && (Date.now() - lastPauseTimestamp < 700)) {
+            try { nativeAudio.pause(); } catch (e) {}
+            return;
+          }
+          isPlaying = true;
+          updatePlayPauseIcons();
+        });
+
         nativeAudio.addEventListener("pause", function () {
+          // Ignore internal src-swap pauses triggered by load() or track switches
+          if (isSwappingAudioSrc) return;
           isPlaying = false;
           updatePlayPauseIcons();
           refreshCurrentListView();
         });
 
         nativeAudio.addEventListener("ended", function () {
-          if (isPlaying) {
+          if (isPlaying && !isSwappingAudioSrc) {
             nextTrack();
           }
         });
@@ -3951,10 +4213,12 @@
         nativeAudio.addEventListener("error", function (e) {
           console.warn("Audio element encountered error; falling back to local track MP3:", e);
           if (isPlaying && currentTrack && (!nativeAudio.src || nativeAudio.src.indexOf("/audio/") === -1)) {
+            isSwappingAudioSrc = true;
             nativeAudio.src = resolveAudioPath(localAudioUrls[0]);
             nativeAudio.load();
             var p = nativeAudio.play();
             if (p && p.catch) p.catch(function () {});
+            setTimeout(function () { isSwappingAudioSrc = false; }, 250);
           }
         });
       }
@@ -4101,6 +4365,7 @@
         lastPlayCommandTime = now;
 
         var reqGen = ++playbackGenerationId;
+        isSwappingAudioSrc = true;
         silenceAllLocalAudio();
 
         currentTrack = track;
@@ -4120,6 +4385,32 @@
           var targetId = activeConnectTargetId || spotifyWebPlayerDeviceId || undefined;
           var uri = track.uri || (track.id ? "spotify:track:" + track.id : "");
 
+          function fallbackToDirectSpotifyOrNative() {
+            if (reqGen !== playbackGenerationId || !isPlaying) return;
+            var spUrl = "https://api.spotify.com/v1/me/player/play" + (targetId ? ("?device_id=" + encodeURIComponent(targetId)) : "");
+            var dXhr = new XMLHttpRequest();
+            dXhr.open("PUT", spUrl, true);
+            dXhr.setRequestHeader("Authorization", "Bearer " + token);
+            dXhr.setRequestHeader("Content-Type", "application/json");
+            dXhr.timeout = 3500;
+            dXhr.onreadystatechange = function () {
+              if (dXhr.readyState === 4) {
+                if (reqGen !== playbackGenerationId || !isPlaying) return;
+                if (dXhr.status >= 200 && dXhr.status < 300) {
+                  isSwappingAudioSrc = false;
+                  silenceAllLocalAudio();
+                  updatePlayPauseIcons();
+                  refreshCurrentListView();
+                  return;
+                }
+                startNativePlayback(track, index, reqGen);
+              }
+            };
+            dXhr.onerror = function () { startNativePlayback(track, index, reqGen); };
+            dXhr.ontimeout = function () { startNativePlayback(track, index, reqGen); };
+            try { dXhr.send(uri ? JSON.stringify({ uris: [uri] }) : "{}"); } catch (e) { startNativePlayback(track, index, reqGen); }
+          }
+
           var xhr = new XMLHttpRequest();
           xhr.open("POST", getBackendBaseUrl() + "/api/spotify/player/play", true);
           xhr.setRequestHeader("Content-Type", "application/json");
@@ -4131,19 +4422,18 @@
                 var res = {};
                 try { res = JSON.parse(xhr.responseText || "{}"); } catch (e) {}
                 if (res.mode !== "local_audio") {
+                  isSwappingAudioSrc = false;
                   silenceAllLocalAudio();
                   updatePlayPauseIcons();
                   refreshCurrentListView();
                   return;
                 }
               }
-              startNativePlayback(track, index, reqGen);
+              fallbackToDirectSpotifyOrNative();
             }
           };
           xhr.onerror = function () {
-            if (reqGen === playbackGenerationId && isPlaying) {
-              startNativePlayback(track, index, reqGen);
-            }
+            fallbackToDirectSpotifyOrNative();
           };
           try {
             xhr.send(JSON.stringify({
@@ -4159,15 +4449,19 @@
           }
         }
 
-        // 2. Direct synchronous full-length HTML5 audio playback (works reliably on iPhone 5 & static hosts)
+        // 2. Direct synchronous HTML5 audio playback (works reliably on iPhone 5 & static hosts)
         startNativePlayback(track, index, reqGen);
       }
 
       function startNativePlayback(track, index, reqGen) {
-        if (typeof reqGen === "number" && (reqGen !== playbackGenerationId || !isPlaying)) return;
+        if (typeof reqGen === "number" && (reqGen !== playbackGenerationId || !isPlaying)) {
+          isSwappingAudioSrc = false;
+          return;
+        }
         var nativeAudio = document.getElementById("native-audio-player");
         if (!nativeAudio) return;
 
+        isSwappingAudioSrc = true;
         if (spotifyWebPlayerInstance) {
           try { spotifyWebPlayerInstance.pause(); } catch (e) {}
         }
@@ -4189,6 +4483,27 @@
           }
         } catch (e) {
           startSynthAudio();
+        }
+        setTimeout(function () { isSwappingAudioSrc = false; }, 250);
+
+        // If song wasn't pre-resolved yet to real .m4a audio, resolve and upgrade seamlessly
+        if (!trackHasRealAudio(track)) {
+          resolveRealSongAudio(track, function (resolved) {
+            if (!resolved || !resolved.audioUrl) return;
+            if (typeof reqGen === "number" && (reqGen !== playbackGenerationId || !isPlaying)) return;
+            if (currentTrack !== track) return;
+            updatePlayerUI();
+            if (nativeAudio.src !== resolved.audioUrl) {
+              isSwappingAudioSrc = true;
+              try {
+                nativeAudio.src = resolved.audioUrl;
+                nativeAudio.load();
+                var p2 = nativeAudio.play();
+                if (p2 && p2.catch) p2.catch(function () {});
+              } catch (e) {}
+              setTimeout(function () { isSwappingAudioSrc = false; }, 250);
+            }
+          });
         }
         refreshCurrentListView();
       }
@@ -4749,6 +5064,7 @@
           '</div>';
         }
         container.innerHTML = html;
+        preResolveTrackQueueAudio(matches);
       }
 
       function renderSearchResults(query) {
@@ -4828,7 +5144,7 @@
                           album: t.album ? t.album.name : "",
                           duration: t.duration_ms ? Math.round(t.duration_ms / 1000) : 180,
                           art: art,
-                          preview_url: localAudioUrls[i % localAudioUrls.length]
+                          preview_url: t.preview_url || localAudioUrls[i % localAudioUrls.length]
                         });
                       }
                       finishSearch(mapped, true);
@@ -4861,6 +5177,7 @@
                     var r = results[i];
                     if (!r || !r.trackName) continue;
                     var art = r.artworkUrl100 ? r.artworkUrl100.replace("100x100bb", "300x300bb") : LOCAL_COVERS.indie;
+                    var realUrl = r.previewUrl || localAudioUrls[i % localAudioUrls.length];
                     tracks.push({
                       id: "it_" + (r.trackId || i),
                       title: r.trackName,
@@ -4868,7 +5185,8 @@
                       album: r.collectionName || "",
                       duration: r.trackTimeMillis ? Math.round(r.trackTimeMillis / 1000) : 180,
                       art: art,
-                      preview_url: localAudioUrls[i % localAudioUrls.length]
+                      preview_url: realUrl,
+                      resolved_audio_url: r.previewUrl || ""
                     });
                   }
                 } catch (e) {}
@@ -4960,6 +5278,14 @@
         container.innerHTML = html;
       }
 
+      window.playRecentTrack = function (idx) {
+        var tracks = seedPlaylists[0].tracks;
+        activeTrackQueue = tracks;
+        if (tracks && tracks[idx]) {
+          playTrack(tracks[idx], idx);
+        }
+      };
+
       function renderRecentTracks() {
         var container = document.getElementById("recent-tracks-list");
         var tracks = seedPlaylists[0].tracks;
@@ -4967,7 +5293,7 @@
         for (var i = 0; i < Math.min(3, tracks.length); i++) {
           var t = tracks[i];
           var artUrl = getSafeArtUrl(t.art, LOCAL_COVERS.doom);
-          html += '<div class="ios7-rich-cell" role="button" tabindex="0" aria-label="Play ' + escapeHtml(t.title) + ' by ' + escapeHtml(t.artist) + '" onclick="playSelectedTrack(' + i + ')">' +
+          html += '<div class="ios7-rich-cell" role="button" tabindex="0" aria-label="Play ' + escapeHtml(t.title) + ' by ' + escapeHtml(t.artist) + '" onclick="playRecentTrack(' + i + ')">' +
             '<img src="' + artUrl + '" class="rich-thumbnail" style="width:36px; height:36px;" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'' + LOCAL_COVERS.doom + '\';" alt="Art">' +
             '<div class="rich-info">' +
               '<div class="rich-title">' + escapeHtml(t.title) + '</div>' +
@@ -4977,6 +5303,7 @@
           '</div>';
         }
         container.innerHTML = html;
+        preResolveTrackQueueAudio(tracks.slice(0, 3));
       }
 
       // -----------------------------------------------------------------
@@ -4997,6 +5324,11 @@
 
       window.unpairAndReset = function () {
         safeStorage.remove("access_token");
+        safeStorage.remove("connected_device_label");
+        var fb = document.getElementById("inline-connect-feedback");
+        if (fb) fb.style.display = "none";
+        var inp = document.getElementById("inline-connect-code-input");
+        if (inp) inp.value = "";
         closeSettingsModal();
         showPairDeviceScreen();
       };
